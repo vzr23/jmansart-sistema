@@ -2,7 +2,7 @@ const { google } = require('googleapis');
 const path = require('path');
 
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '15BLBHc0watZaGCzhzItPDTRYmWa4UUoxAaGorIXUunQ';
-const CREDENTIALS_PATH = path.join(__dirname, 'credentials', 'jmansart-cadastro-4ea26f92fcb7.json');
+const CREDENTIALS_PATH = path.join(__dirname, 'credentials', 'jmansart-cadastro-ed5a9e592d76.json');
 
 const IMOVEIS_SHEET = 'Imóveis';
 const CLIENTES_SHEET = 'Clientes';
