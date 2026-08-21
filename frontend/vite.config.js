@@ -19,4 +19,8 @@ export default defineConfig({
       '/health':         { target: 'http://localhost:3001', changeOrigin: true },
     },
   },
+  preview: {
+    port: process.env.PORT ? parseInt(process.env.PORT) : 4173,
+    host: '0.0.0.0',
+  },
 });
