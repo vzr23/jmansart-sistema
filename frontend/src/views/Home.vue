@@ -2,10 +2,17 @@
   <div class="max-w-5xl mx-auto px-4 py-16">
     <!-- Hero -->
     <div class="text-center mb-14">
-      <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-navy-600 shadow-lg mb-6">
-        <span class="text-gold-400 font-bold text-3xl">JM</span>
+      <div class="inline-flex flex-col items-center gap-4 mb-6">
+        <img
+          :src="logoUrl"
+          alt="J.Mansart"
+          class="w-24 h-24 rounded-2xl object-cover shadow-xl"
+        />
+        <div>
+          <div class="font-serif tracking-[0.28em] text-2xl text-navy-700 font-medium">J.MANSART</div>
+          <div class="text-[11px] text-slate-400 tracking-widest uppercase font-sans mt-1">Imobiliária</div>
+        </div>
       </div>
-      <h1 class="text-3xl font-bold text-navy-700 mb-2">J.Mansart Imobiliária</h1>
       <p class="text-slate-500 text-base">Sistema de cadastro de imóveis e clientes</p>
     </div>
 
@@ -70,3 +77,7 @@
     </div>
   </div>
 </template>
+
+<script setup>
+import logoUrl from '@/assets/logo.png';
+</script>

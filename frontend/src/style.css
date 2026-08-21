@@ -6,7 +6,10 @@
   body {
     @apply bg-slate-50 text-slate-800 font-sans;
   }
-  h1, h2, h3 {
+  h1, h2 {
+    @apply font-serif font-semibold;
+  }
+  h3 {
     @apply font-semibold;
   }
 }

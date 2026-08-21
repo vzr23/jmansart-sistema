@@ -5,27 +5,21 @@ export default {
     extend: {
       colors: {
         navy: {
-          50:  '#f0f4fa',
-          100: '#d9e2ef',
-          200: '#b3c4de',
-          300: '#7a9ac3',
-          400: '#4d78aa',
-          500: '#2c5899',
-          600: '#1e3a5f',   // primary
-          700: '#162d4d',
-          800: '#0f1f35',
-          900: '#08131f',
-        },
-        gold: {
-          300: '#f5d987',
-          400: '#e8c14a',
-          500: '#c8a951',   // accent
-          600: '#a88830',
-          700: '#7a6020',
+          50:  '#f0f2f7',
+          100: '#DCDEE0',  // Cinza Claro — fundos neutros
+          200: '#C8CBCF',  // Cinza Frio — textos de apoio, linhas
+          300: '#8a9ab5',
+          400: '#4a6080',
+          500: '#243858',
+          600: '#1B2743',  // Azul Vendôme Profundo — navbar, fundos
+          700: '#101A30',  // Azul Vendôme — cor principal da marca
+          800: '#0c1428',
+          900: '#080d1a',
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans:  ['Karla', 'system-ui', 'sans-serif'],
+        serif: ['Cormorant Garamond', 'Georgia', 'serif'],
       },
     },
   },

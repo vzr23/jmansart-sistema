@@ -1,14 +1,16 @@
 <template>
-  <header class="bg-navy-600 text-white shadow-lg sticky top-0 z-50">
+  <header class="bg-navy-700 text-white shadow-lg sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
       <!-- Logo -->
       <router-link to="/" class="flex items-center gap-3 group">
-        <div class="w-9 h-9 rounded-lg bg-gold-500 flex items-center justify-center shrink-0 shadow">
-          <span class="text-navy-800 font-bold text-sm leading-none">JM</span>
-        </div>
+        <img
+          :src="logoUrl"
+          alt="J.Mansart"
+          class="w-10 h-10 rounded-lg shrink-0 object-cover"
+        />
         <div class="leading-tight">
-          <div class="font-bold tracking-widest text-sm text-white">J·MANSART</div>
-          <div class="text-xs text-navy-200 tracking-wide">Imobiliária</div>
+          <div class="font-serif tracking-[0.22em] text-sm text-white font-medium">J.MANSART</div>
+          <div class="text-[10px] text-navy-200 tracking-widest uppercase font-sans">Imobiliária</div>
         </div>
       </router-link>
 
@@ -21,7 +23,7 @@
           class="px-4 py-2 rounded-lg text-sm font-medium transition-all"
           :class="$route.path === link.to
             ? 'bg-white/15 text-white'
-            : 'text-navy-200 hover:bg-white/10 hover:text-white'"
+            : 'text-navy-100 hover:bg-white/10 hover:text-white'"
         >
           {{ link.label }}
         </router-link>
@@ -44,7 +46,7 @@
 
     <!-- Mobile nav -->
     <transition name="slide-down">
-      <div v-if="mobileOpen" class="sm:hidden border-t border-navy-500 bg-navy-700 px-4 py-3 space-y-1">
+      <div v-if="mobileOpen" class="sm:hidden border-t border-navy-600 bg-navy-800 px-4 py-3 space-y-1">
         <router-link
           v-for="link in links"
           :key="link.to"
@@ -64,6 +66,7 @@
 
 <script setup>
 import { ref } from 'vue';
+import logoUrl from '@/assets/logo.png';
 
 const mobileOpen = ref(false);
 
