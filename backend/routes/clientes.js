@@ -1,0 +1,97 @@
+const { appendRow, getRows, getColumnA, deleteRowById, deleteMovimentacoesByRef, CLIENTES_SHEET } = require('../sheets');
+
+async function generateClienteId() {
+  const existingIds = await getColumnA(CLIENTES_SHEET);
+  let maxSeq = 0;
+  existingIds.forEach((id) => {
+    const m = String(id).match(/^CLI(\d+)$/);
+    if (m) {
+      const seq = parseInt(m[1], 10);
+      if (seq > maxSeq) maxSeq = seq;
+    }
+  });
+  return `CLI${String(maxSeq + 1).padStart(3, '0')}`;
+}
+
+// POST /cliente
+async function createCliente(req, res) {
+  try {
+    const b = req.body;
+
+    // ── Desestrutura grupos do payload ──────────────────────────
+    const { dadosPessoais = {}, preferencias = {}, vinculo = {}, movimentacao = '' } = b;
+    const { nome = '', cpf = '', rg = '', estadoCivil = '', conjuge = '',
+            dataAniversario = '', endereco = {} } = dadosPessoais;
+    const { logradouro = '', numero = '', complemento = '', bairro = '',
+            cidade = '', uf = '', cep = '' } = endereco;
+    const { hobbies = '', gostosPessoais = '', bebidaPreferida = '' } = preferencias;
+    const { imovelInteresse = '' } = vinculo;
+
+    const id = await generateClienteId();
+    const now = new Date().toLocaleDateString('pt-BR');
+
+    const enderecoStr = [logradouro, numero, complemento, bairro].filter(Boolean).join(', ');
+
+    const row = [
+      id,
+      now,
+      nome,
+      cpf,
+      rg,
+      estadoCivil,
+      conjuge,
+      enderecoStr,
+      cidade,
+      uf,
+      cep,
+      dataAniversario,
+      hobbies,
+      gostosPessoais,
+      bebidaPreferida,
+      imovelInteresse,
+      movimentacao,
+    ];
+
+    await appendRow(CLIENTES_SHEET, row);
+    res.status(201).json({ success: true, id });
+  } catch (err) {
+    console.error('[POST /cliente]', err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+// GET /clientes
+async function listClientes(req, res) {
+  try {
+    const rows = await getRows(CLIENTES_SHEET);
+    const q = (req.query.q || '').toLowerCase().trim();
+    const filtered = q
+      ? rows.filter(
+          (r) =>
+            (r['ID'] || '').toLowerCase().includes(q) ||
+            (r['Nome'] || '').toLowerCase().includes(q) ||
+            (r['CPF'] || '').toLowerCase().includes(q)
+        )
+      : rows;
+    res.json(filtered);
+  } catch (err) {
+    console.error('[GET /clientes]', err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+// DELETE /cliente/:id
+async function deleteCliente(req, res) {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: 'ID é obrigatório.' });
+    await deleteRowById(CLIENTES_SHEET, id);
+    await deleteMovimentacoesByRef(id); // Remove movimentações vinculadas
+    res.json({ success: true, id });
+  } catch (err) {
+    console.error('[DELETE /cliente]', err);
+    res.status(err.message.includes('não encontrado') ? 404 : 500).json({ error: err.message });
+  }
+}
+
+module.exports = { createCliente, listClientes, deleteCliente };

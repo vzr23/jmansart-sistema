@@ -1,0 +1,252 @@
+<template>
+  <div class="max-w-4xl mx-auto px-4 py-10">
+    <!-- Header -->
+    <div class="mb-8">
+      <router-link to="/" class="btn-ghost mb-3 -ml-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Voltar
+      </router-link>
+      <h1 class="text-2xl font-bold text-navy-700">Cadastro de Cliente</h1>
+      <p class="text-sm text-slate-500 mt-1">Registre as informações completas do cliente</p>
+    </div>
+
+    <form @submit.prevent="submit" class="space-y-6">
+
+      <!-- ───── Dados Pessoais ───── -->
+      <div class="card p-6">
+        <div class="section-title">
+          <span class="section-number">1</span>
+          Dados Pessoais
+        </div>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2">
+            <label class="input-label">Nome completo *</label>
+            <input v-model="form.nome" class="input-field" placeholder="Nome completo" required />
+          </div>
+          <div>
+            <label class="input-label">CPF</label>
+            <input v-model="form.cpf" class="input-field" placeholder="000.000.000-00" maxlength="14" @input="formatCPF" />
+          </div>
+          <div>
+            <label class="input-label">RG</label>
+            <input v-model="form.rg" class="input-field" placeholder="RG" />
+          </div>
+          <div>
+            <label class="input-label">Estado Civil</label>
+            <select v-model="form.estadoCivil" class="input-field">
+              <option value="">Selecione...</option>
+              <option v-for="ec in estadosCivis" :key="ec" :value="ec">{{ ec }}</option>
+            </select>
+          </div>
+          <transition name="fade">
+            <div v-if="form.estadoCivil === 'Casado(a)'">
+              <label class="input-label">Nome do Cônjuge</label>
+              <input v-model="form.conjuge" class="input-field" placeholder="Nome completo do cônjuge" />
+            </div>
+          </transition>
+          <div>
+            <label class="input-label">Data de Aniversário</label>
+            <input v-model="form.dataAniversario" type="date" class="input-field" />
+          </div>
+        </div>
+
+        <!-- Endereço -->
+        <div class="mt-5">
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Endereço</p>
+          <div class="grid sm:grid-cols-3 gap-4">
+            <div class="sm:col-span-2">
+              <label class="input-label">Logradouro</label>
+              <input v-model="form.logradouro" class="input-field" placeholder="Rua, Av., etc." />
+            </div>
+            <div>
+              <label class="input-label">Número</label>
+              <input v-model="form.numero" class="input-field" placeholder="Nº" />
+            </div>
+            <div>
+              <label class="input-label">Complemento</label>
+              <input v-model="form.complemento" class="input-field" placeholder="Apto, Sala..." />
+            </div>
+            <div>
+              <label class="input-label">Bairro</label>
+              <input v-model="form.bairro" class="input-field" placeholder="Bairro" />
+            </div>
+            <div>
+              <label class="input-label">CEP</label>
+              <input v-model="form.cep" class="input-field" placeholder="00000-000" maxlength="9" />
+            </div>
+            <div>
+              <label class="input-label">Cidade</label>
+              <input v-model="form.cidade" class="input-field" placeholder="Cidade" />
+            </div>
+            <div>
+              <label class="input-label">UF</label>
+              <select v-model="form.uf" class="input-field">
+                <option value="">UF</option>
+                <option v-for="uf in ufs" :key="uf" :value="uf">{{ uf }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ───── Preferências ───── -->
+      <div class="card p-6">
+        <div class="section-title">
+          <span class="section-number">2</span>
+          Preferências &amp; Perfil
+        </div>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2">
+            <label class="input-label">Hobbies</label>
+            <input v-model="form.hobbies" class="input-field" placeholder="Ex: Golf, leitura, viagens..." />
+          </div>
+          <div class="sm:col-span-2">
+            <label class="input-label">Gostos pessoais</label>
+            <textarea v-model="form.gostosPessoais" class="input-field" rows="2"
+              placeholder="Estilo de vida, preferências gerais..."></textarea>
+          </div>
+          <div>
+            <label class="input-label">Bebida preferida</label>
+            <input v-model="form.bebidaPreferida" class="input-field" placeholder="Ex: Vinho tinto, whisky..." />
+          </div>
+        </div>
+      </div>
+
+      <!-- ───── Vínculo com Imóvel ───── -->
+      <div class="card p-6">
+        <div class="section-title">
+          <span class="section-number">3</span>
+          Vínculo com Imóvel
+        </div>
+        <div>
+          <label class="input-label">ID do Imóvel de Interesse</label>
+          <input
+            v-model="form.imovelInteresse"
+            class="input-field font-mono"
+            placeholder="Ex: BC0012026"
+          />
+          <p class="text-xs text-slate-400 mt-1">
+            Informe o ID do imóvel cadastrado no sistema (ex: BC0012026).
+          </p>
+        </div>
+      </div>
+
+      <!-- ───── Movimentação ───── -->
+      <div class="card p-6">
+        <div class="section-title">
+          <span class="section-number">4</span>
+          Movimentação / Histórico
+        </div>
+        <textarea
+          v-model="form.movimentacao"
+          class="input-field font-mono text-xs"
+          rows="8"
+          placeholder="Histórico de contatos, visitas, preferências expressas, negociações..."
+        ></textarea>
+      </div>
+
+      <!-- Submit -->
+      <div class="flex justify-end gap-3 pt-2">
+        <router-link to="/" class="btn-secondary">Cancelar</router-link>
+        <button type="submit" :disabled="loading" class="btn-primary">
+          <svg v-if="loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          </svg>
+          <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+          {{ loading ? 'Salvando...' : 'Salvar Cliente' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+import { criarCliente } from '../api/index.js';
+import { useToast } from '../composables/useToast.js';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+const { success, error } = useToast();
+const loading = ref(false);
+
+const form = ref({
+  nome: '', cpf: '', rg: '', estadoCivil: '', conjuge: '', dataAniversario: '',
+  logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '', cep: '',
+  hobbies: '', gostosPessoais: '', bebidaPreferida: '',
+  imovelInteresse: '',
+  movimentacao: '',
+});
+
+const estadosCivis = ['Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)', 'União Estável'];
+
+const ufs = [
+  'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
+  'PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO',
+];
+
+function formatCPF(e) {
+  let v = e.target.value.replace(/\D/g, '');
+  v = v.replace(/(\d{3})(\d)/, '$1.$2');
+  v = v.replace(/(\d{3})(\d)/, '$1.$2');
+  v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  form.value.cpf = v;
+}
+
+async function submit() {
+  const f = form.value;
+  if (!f.nome.trim()) {
+    error('O nome do cliente é obrigatório.');
+    return;
+  }
+  loading.value = true;
+  try {
+    const payload = {
+      dadosPessoais: {
+        nome:            f.nome,
+        cpf:             f.cpf,
+        rg:              f.rg,
+        estadoCivil:     f.estadoCivil,
+        conjuge:         f.conjuge,
+        dataAniversario: f.dataAniversario,
+        endereco: {
+          logradouro:  f.logradouro,
+          numero:      f.numero,
+          complemento: f.complemento,
+          bairro:      f.bairro,
+          cidade:      f.cidade,
+          uf:          f.uf,
+          cep:         f.cep,
+        },
+      },
+      preferencias: {
+        hobbies:        f.hobbies,
+        gostosPessoais: f.gostosPessoais,
+        bebidaPreferida: f.bebidaPreferida,
+      },
+      vinculo: {
+        imovelInteresse: f.imovelInteresse,
+      },
+      movimentacao: f.movimentacao,
+    };
+
+    const { data } = await criarCliente(payload);
+    success(`Cliente cadastrado com sucesso! ID: ${data.id}`);
+    setTimeout(() => router.push('/listagem'), 1800);
+  } catch (err) {
+    error(err?.response?.data?.error || 'Erro ao salvar cliente. Verifique a conexão com a API.');
+  } finally {
+    loading.value = false;
+  }
+}
+</script>
+
+<style scoped>
+.fade-enter-active, .fade-leave-active { transition: all 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-4px); }
+</style>
