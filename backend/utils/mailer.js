@@ -4,7 +4,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendOtp(toEmail, code) {
   await resend.emails.send({
-    from: 'J.Mansart Sistema <noreply@jmansart.com.br>',
+    from: 'J.Mansart Sistema <onboarding@resend.dev>',
     to: toEmail,
     subject: 'Código de verificação – J.Mansart',
     html: `
