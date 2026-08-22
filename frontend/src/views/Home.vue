@@ -10,7 +10,6 @@
         />
         <div>
           <div class="font-serif tracking-[0.28em] text-2xl text-navy-700 font-medium">J.MANSART</div>
-          <div class="text-[11px] text-slate-400 tracking-widest uppercase font-sans mt-1">Imobiliária</div>
         </div>
       </div>
       <p class="text-slate-500 text-base">Sistema de cadastro de imóveis e clientes</p>

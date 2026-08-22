@@ -10,7 +10,6 @@
         />
         <div class="leading-tight">
           <div class="font-serif tracking-[0.22em] text-sm text-white font-medium">J.MANSART</div>
-          <div class="text-[10px] text-navy-200 tracking-widest uppercase font-sans">Imobiliária</div>
         </div>
       </router-link>
 

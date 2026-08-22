@@ -52,7 +52,7 @@
       </div>
 
       <p class="text-navy-300 text-xs text-center mt-6">
-        © {{ new Date().getFullYear() }} J.Mansart Imobiliária
+        © {{ new Date().getFullYear() }} J.Mansart
       </p>
     </div>
   </div>
