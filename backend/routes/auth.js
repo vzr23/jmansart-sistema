@@ -8,15 +8,21 @@ async function login(req, res) {
   const validUser = process.env.AUTH_USER;
   const validPass = process.env.AUTH_PASS;
   const secret    = process.env.AUTH_JWT_SECRET;
-  const authEmail = process.env.AUTH_EMAIL;
+  const authEmail = process.env.OTP_EMAIL;
 
-  if (!validUser || !validPass || !secret || !authEmail) {
-    console.error('[auth] Variáveis AUTH_USER, AUTH_PASS, AUTH_JWT_SECRET e AUTH_EMAIL são obrigatórias');
-    return res.status(500).json({ error: 'Configuração de autenticação incompleta no servidor' });
+  if (!validUser || !validPass || !secret) {
+    console.error('[auth] Variáveis AUTH_USER, AUTH_PASS ou AUTH_JWT_SECRET não definidas');
+    return res.status(500).json({ error: 'Configuração de autenticação ausente no servidor' });
   }
 
   if (user !== validUser || password !== validPass) {
     return res.status(401).json({ error: 'Usuário ou senha incorretos' });
+  }
+
+  if (!authEmail) {
+    // Sem e-mail configurado: retorna token direto (fallback)
+    const token = jwt.sign({ user }, secret, { expiresIn: '8h' });
+    return res.json({ token });
   }
 
   try {
