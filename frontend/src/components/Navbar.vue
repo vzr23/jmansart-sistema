@@ -14,20 +14,37 @@
         </div>
       </router-link>
 
-      <!-- Nav links -->
-      <nav class="hidden sm:flex items-center gap-1">
-        <router-link
-          v-for="link in links"
-          :key="link.to"
-          :to="link.to"
-          class="px-4 py-2 rounded-lg text-sm font-medium transition-all"
-          :class="$route.path === link.to
-            ? 'bg-white/15 text-white'
-            : 'text-navy-100 hover:bg-white/10 hover:text-white'"
+      <!-- Nav links + logout (desktop) -->
+      <div class="hidden sm:flex items-center gap-1">
+        <nav class="flex items-center gap-1">
+          <router-link
+            v-for="link in links"
+            :key="link.to"
+            :to="link.to"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+            :class="$route.path === link.to
+              ? 'bg-white/15 text-white'
+              : 'text-navy-100 hover:bg-white/10 hover:text-white'"
+          >
+            {{ link.label }}
+          </router-link>
+        </nav>
+
+        <div class="w-px h-5 bg-navy-500 mx-2"></div>
+
+        <button
+          @click="logout"
+          class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium
+                 text-navy-200 hover:bg-white/10 hover:text-white transition-all"
+          title="Sair"
         >
-          {{ link.label }}
-        </router-link>
-      </nav>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/>
+          </svg>
+          Sair
+        </button>
+      </div>
 
       <!-- Mobile menu button -->
       <button
@@ -59,6 +76,17 @@
         >
           {{ link.label }}
         </router-link>
+        <button
+          @click="logout"
+          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-sm
+                 font-medium text-navy-300 hover:bg-white/10 hover:text-white transition"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/>
+          </svg>
+          Sair
+        </button>
       </div>
     </transition>
   </header>
@@ -66,16 +94,23 @@
 
 <script setup>
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import logoUrl from '@/assets/logo.png';
 
+const router     = useRouter();
 const mobileOpen = ref(false);
 
 const links = [
-  { to: '/',        label: 'Início' },
-  { to: '/imovel',  label: 'Cadastrar Imóvel' },
-  { to: '/cliente', label: 'Cadastrar Cliente' },
+  { to: '/',         label: 'Início' },
+  { to: '/imovel',   label: 'Cadastrar Imóvel' },
+  { to: '/cliente',  label: 'Cadastrar Cliente' },
   { to: '/listagem', label: 'Listagem' },
 ];
+
+function logout() {
+  sessionStorage.removeItem('authenticated');
+  router.push('/login');
+}
 </script>
 
 <style scoped>
