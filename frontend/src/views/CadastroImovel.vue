@@ -174,7 +174,21 @@
                 </div>
                 <div>
                   <label class="input-label">CEP</label>
-                  <input v-model="form.cepVendedor" class="input-field" placeholder="00000-000" maxlength="9" />
+                  <div class="relative">
+                    <input
+                      v-model="form.cepVendedor"
+                      @input="e => { form.cepVendedor = formatarCep(e.target.value); cepVendedorErro = '' }"
+                      @blur="buscarCepVendedor"
+                      class="input-field"
+                      placeholder="00000-000"
+                      maxlength="9"
+                    />
+                    <svg v-if="cepVendedorLoading" class="absolute right-2.5 top-2.5 w-4 h-4 animate-spin text-navy-400" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    </svg>
+                  </div>
+                  <p v-if="cepVendedorErro" class="text-red-500 text-xs mt-1">{{ cepVendedorErro }}</p>
                 </div>
                 <div>
                   <label class="input-label">Cidade</label>
@@ -250,7 +264,21 @@
           </div>
           <div>
             <label class="input-label">CEP</label>
-            <input v-model="form.cepImovel" class="input-field" placeholder="00000-000" maxlength="9" />
+            <div class="relative">
+              <input
+                v-model="form.cepImovel"
+                @input="e => { form.cepImovel = formatarCep(e.target.value); cepImovelErro = '' }"
+                @blur="buscarCepImovel"
+                class="input-field"
+                placeholder="00000-000"
+                maxlength="9"
+              />
+              <svg v-if="cepImovelLoading" class="absolute right-2.5 top-2.5 w-4 h-4 animate-spin text-navy-400" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+            </div>
+            <p v-if="cepImovelErro" class="text-red-500 text-xs mt-1">{{ cepImovelErro }}</p>
           </div>
           <!-- Cidade + Sigla para geração de ID -->
           <div>
@@ -399,11 +427,57 @@ import { ref, computed } from 'vue';
 import { criarImovel, buscarSigla } from '../api/index.js';
 import { useToast } from '../composables/useToast.js';
 import { useRouter } from 'vue-router';
+import { formatarCep, buscarEnderecoPorCep } from '../utils/cep.js';
 
 const router = useRouter();
 const { success, error } = useToast();
 
 const loading = ref(false);
+
+// ── CEP lookup ────────────────────────────
+const cepVendedorLoading = ref(false);
+const cepVendedorErro    = ref('');
+const cepImovelLoading   = ref(false);
+const cepImovelErro      = ref('');
+
+async function buscarCepVendedor() {
+  const digits = form.value.cepVendedor.replace(/\D/g, '');
+  if (digits.length !== 8) return;
+  cepVendedorLoading.value = true;
+  cepVendedorErro.value = '';
+  try {
+    const addr = await buscarEnderecoPorCep(form.value.cepVendedor);
+    if (!addr) { cepVendedorErro.value = 'CEP não encontrado.'; return; }
+    form.value.logradouroVendedor = addr.logradouro;
+    form.value.bairroVendedor     = addr.bairro;
+    form.value.cidadeVendedor     = addr.cidade;
+    form.value.ufVendedor         = addr.uf;
+  } catch {
+    cepVendedorErro.value = 'Erro ao consultar o CEP.';
+  } finally {
+    cepVendedorLoading.value = false;
+  }
+}
+
+async function buscarCepImovel() {
+  const digits = form.value.cepImovel.replace(/\D/g, '');
+  if (digits.length !== 8) return;
+  cepImovelLoading.value = true;
+  cepImovelErro.value = '';
+  try {
+    const addr = await buscarEnderecoPorCep(form.value.cepImovel);
+    if (!addr) { cepImovelErro.value = 'CEP não encontrado.'; return; }
+    form.value.logradouroImovel = addr.logradouro;
+    form.value.bairroImovel     = addr.bairro;
+    form.value.cidadeImovel     = addr.cidade;
+    form.value.ufImovel         = addr.uf;
+    if (!form.value.cidadeAbrev) sugerirSigla();
+  } catch {
+    cepImovelErro.value = 'Erro ao consultar o CEP.';
+  } finally {
+    cepImovelLoading.value = false;
+  }
+}
 
 const form = ref({
   // Seção 1

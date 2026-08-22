@@ -74,7 +74,21 @@
             </div>
             <div>
               <label class="input-label">CEP</label>
-              <input v-model="form.cep" class="input-field" placeholder="00000-000" maxlength="9" />
+              <div class="relative">
+                <input
+                  v-model="form.cep"
+                  @input="e => { form.cep = formatarCep(e.target.value); cepErro = '' }"
+                  @blur="buscarCep"
+                  class="input-field"
+                  placeholder="00000-000"
+                  maxlength="9"
+                />
+                <svg v-if="cepLoading" class="absolute right-2.5 top-2.5 w-4 h-4 animate-spin text-navy-400" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+              </div>
+              <p v-if="cepErro" class="text-red-500 text-xs mt-1">{{ cepErro }}</p>
             </div>
             <div>
               <label class="input-label">Cidade</label>
@@ -170,10 +184,34 @@ import { ref } from 'vue';
 import { criarCliente } from '../api/index.js';
 import { useToast } from '../composables/useToast.js';
 import { useRouter } from 'vue-router';
+import { formatarCep, buscarEnderecoPorCep } from '../utils/cep.js';
 
 const router = useRouter();
 const { success, error } = useToast();
 const loading = ref(false);
+
+// ── CEP lookup ────────────────────────────
+const cepLoading = ref(false);
+const cepErro    = ref('');
+
+async function buscarCep() {
+  const digits = form.value.cep.replace(/\D/g, '');
+  if (digits.length !== 8) return;
+  cepLoading.value = true;
+  cepErro.value = '';
+  try {
+    const addr = await buscarEnderecoPorCep(form.value.cep);
+    if (!addr) { cepErro.value = 'CEP não encontrado.'; return; }
+    form.value.logradouro = addr.logradouro;
+    form.value.bairro     = addr.bairro;
+    form.value.cidade     = addr.cidade;
+    form.value.uf         = addr.uf;
+  } catch {
+    cepErro.value = 'Erro ao consultar o CEP.';
+  } finally {
+    cepLoading.value = false;
+  }
+}
 
 const form = ref({
   nome: '', cpf: '', rg: '', estadoCivil: '', conjuge: '', dataAniversario: '',
