@@ -2,8 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
 
-const { login }              = require('./routes/auth');
-const authMiddleware         = require('./middleware/auth');
+const { login, verifyOtpRoute }  = require('./routes/auth');
+const authMiddleware             = require('./middleware/auth');
 const { createImovel, listImoveis, getCidadeSigla, deleteImovel, updateImovel } = require('./routes/imoveis');
 const { createCliente, listClientes, deleteCliente, updateCliente }              = require('./routes/clientes');
 const { createMovimentacao, listMovimentacoes }                   = require('./routes/movimentacoes');
@@ -18,7 +18,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // ── Rotas públicas (sem autenticação) ────
 app.get('/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
-app.post('/auth/login', login);
+app.post('/auth/login',      login);
+app.post('/auth/verify-otp', verifyOtpRoute);
 
 // ── JWT: protege todas as rotas abaixo ───
 app.use(authMiddleware);
