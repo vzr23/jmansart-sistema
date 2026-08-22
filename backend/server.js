@@ -8,6 +8,21 @@ const { createImovel, listImoveis, getCidadeSigla, deleteImovel, updateImovel } 
 const { createCliente, listClientes, deleteCliente, updateCliente }              = require('./routes/clientes');
 const { createMovimentacao, listMovimentacoes }                   = require('./routes/movimentacoes');
 
+// ── Validação de Variáveis de Ambiente ───
+const requiredEnvVars = [
+  'AUTH_USER',
+  'AUTH_PASS',
+  'AUTH_JWT_SECRET',
+  'AUTH_EMAIL',
+  'EMAIL_USER',
+  'EMAIL_PASS',
+];
+const missing = requiredEnvVars.filter(v => !process.env[v]);
+if (missing.length > 0) {
+  console.error(`\n❌ ERRO: Variáveis de ambiente obrigatórias não definidas:\n   ${missing.join(', ')}\n`);
+  process.exit(1);
+}
+
 const app  = express();
 const PORT = process.env.PORT || 3001;
 
