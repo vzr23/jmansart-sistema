@@ -21,7 +21,7 @@ async function login(req, res) {
 
   if (!authEmail) {
     // Sem e-mail configurado: retorna token direto (fallback)
-    const token = jwt.sign({ user }, secret, { expiresIn: '8h' });
+    const token = jwt.sign({ user }, secret, { expiresIn: '30m' });
     return res.json({ token });
   }
 
@@ -47,7 +47,7 @@ async function verifyOtpRoute(req, res) {
     return res.status(401).json({ error: 'Código inválido ou expirado' });
   }
 
-  const token = jwt.sign({ user }, secret, { expiresIn: '8h' });
+  const token = jwt.sign({ user }, secret, { expiresIn: '30m' });
   return res.json({ token });
 }
 

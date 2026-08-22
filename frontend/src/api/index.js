@@ -7,7 +7,7 @@ const api = axios.create({
 
 // ── Adiciona token em todas as requisições ──
 api.interceptors.request.use((config) => {
-  const token = sessionStorage.getItem('jmansart_token');
+  const token = localStorage.getItem('jmansart_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -17,7 +17,7 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      sessionStorage.removeItem('jmansart_token');
+      localStorage.removeItem('jmansart_token');
       window.location.href = '/login';
     }
     return Promise.reject(err);

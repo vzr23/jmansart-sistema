@@ -20,7 +20,7 @@ const router = createRouter({
 });
 
 router.beforeEach((to, _from, next) => {
-  const token = sessionStorage.getItem('jmansart_token');
+  const token = localStorage.getItem('jmansart_token');
 
   if (to.meta.public) {
     // Já autenticado: vai direto para Home

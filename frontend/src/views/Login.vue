@@ -131,7 +131,7 @@ async function handleLogin() {
     if (data.requiresOtp) {
       otpStep.value = true;
     } else {
-      sessionStorage.setItem('jmansart_token', data.token);
+      localStorage.setItem('jmansart_token', data.token);
       router.push('/');
     }
   } catch (err) {
@@ -151,7 +151,7 @@ async function handleVerifyOtp() {
       user: username.value,
       code: otpCode.value,
     });
-    sessionStorage.setItem('jmansart_token', data.token);
+    localStorage.setItem('jmansart_token', data.token);
     router.push('/');
   } catch (err) {
     const msg = err.response?.data?.error;
