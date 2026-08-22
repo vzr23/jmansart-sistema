@@ -203,6 +203,40 @@ async function deleteMovimentacoesByRef(refId) {
 }
 
 /**
+ * Atualiza uma linha inteira da planilha pelo valor do ID (coluna A).
+ */
+async function updateRowById(tabName, id, rowValues) {
+  const sheets = await getSheets();
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${tabName}!A:A`,
+  });
+  const colA = res.data.values || [];
+  let rowNumber = -1;
+  for (let i = 1; i < colA.length; i++) {
+    if ((colA[i][0] || '') === String(id)) {
+      rowNumber = i + 1; // 1-based: linha 1 = cabeçalho
+      break;
+    }
+  }
+  if (rowNumber === -1) throw new Error(`Registro "${id}" não encontrado na aba "${tabName}"`);
+
+  const headersMap = {
+    [IMOVEIS_SHEET]: IMOVEIS_HEADERS,
+    [CLIENTES_SHEET]: CLIENTES_HEADERS,
+  };
+  const headers = headersMap[tabName] || IMOVEIS_HEADERS;
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${tabName}!A${rowNumber}:${colLetter(headers.length)}${rowNumber}`,
+    valueInputOption: 'USER_ENTERED',
+    resource: { values: [rowValues] },
+  });
+}
+
+/**
  * Remove uma linha da planilha pelo valor do ID (coluna A).
  */
 async function deleteRowById(tabName, id) {
@@ -260,6 +294,7 @@ module.exports = {
   appendRow,
   getRows,
   getColumnA,
+  updateRowById,
   deleteRowById,
   deleteMovimentacoesByRef,
 };

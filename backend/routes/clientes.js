@@ -1,4 +1,4 @@
-const { appendRow, getRows, getColumnA, deleteRowById, deleteMovimentacoesByRef, CLIENTES_SHEET } = require('../sheets');
+const { appendRow, getRows, getColumnA, updateRowById, deleteRowById, deleteMovimentacoesByRef, CLIENTES_SHEET } = require('../sheets');
 
 async function generateClienteId() {
   const existingIds = await getColumnA(CLIENTES_SHEET);
@@ -94,4 +94,53 @@ async function deleteCliente(req, res) {
   }
 }
 
-module.exports = { createCliente, listClientes, deleteCliente };
+// PUT /cliente/:id
+async function updateCliente(req, res) {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: 'ID é obrigatório.' });
+
+    const rows = await getRows(CLIENTES_SHEET);
+    const original = rows.find((r) => r['ID'] === id);
+    if (!original) return res.status(404).json({ error: `Cliente "${id}" não encontrado.` });
+
+    const b = req.body;
+    const { dadosPessoais = {}, preferencias = {}, vinculo = {}, movimentacao = '' } = b;
+    const { nome = '', cpf = '', rg = '', estadoCivil = '', conjuge = '',
+            dataAniversario = '', endereco = {} } = dadosPessoais;
+    const { logradouro = '', numero = '', complemento = '', bairro = '',
+            cidade = '', uf = '', cep = '' } = endereco;
+    const { hobbies = '', gostosPessoais = '', bebidaPreferida = '' } = preferencias;
+    const { imovelInteresse = '' } = vinculo;
+
+    const enderecoStr = [logradouro, numero, complemento, bairro].filter(Boolean).join(', ');
+
+    const row = [
+      id,
+      original['Data Cadastro'],
+      nome,
+      cpf,
+      rg,
+      estadoCivil,
+      conjuge,
+      enderecoStr,
+      cidade,
+      uf,
+      cep,
+      dataAniversario,
+      hobbies,
+      gostosPessoais,
+      bebidaPreferida,
+      imovelInteresse,
+      movimentacao,
+    ];
+
+    await updateRowById(CLIENTES_SHEET, id, row);
+    res.json({ success: true, id });
+  } catch (err) {
+    console.error('[PUT /cliente]', err);
+    res.status(err.message.includes('não encontrado') ? 404 : 500).json({ error: err.message });
+  }
+}
+
+module.exports = { createCliente, listClientes, deleteCliente, updateCliente };

@@ -1,4 +1,4 @@
-const { appendRow, getRows, getColumnA, deleteRowById, deleteMovimentacoesByRef, IMOVEIS_SHEET } = require('../sheets');
+const { appendRow, getRows, getColumnA, updateRowById, deleteRowById, deleteMovimentacoesByRef, IMOVEIS_SHEET } = require('../sheets');
 const { getCityAbbrev } = require('../utils/cities');
 
 // ─────────────────────────────────────────
@@ -134,4 +134,72 @@ async function deleteImovel(req, res) {
   }
 }
 
-module.exports = { createImovel, listImoveis, getCidadeSigla, deleteImovel };
+// PUT /imovel/:id
+async function updateImovel(req, res) {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: 'ID é obrigatório.' });
+
+    // Busca o registro original para preservar ID e Data Cadastro
+    const rows = await getRows(IMOVEIS_SHEET);
+    const original = rows.find((r) => r['ID'] === id);
+    if (!original) return res.status(404).json({ error: `Imóvel "${id}" não encontrado.` });
+
+    const b = req.body;
+    const { tipoImovel = {}, autorizacaoVenda = '', vendedor = {}, imovel = {}, condicoesComerciais = {}, movimentacao = '' } = b;
+    const { tipo = '', subtipos = [] } = tipoImovel;
+    const { tipoVendedor = 'PF', nome = '', cpf = '', rg = '', estadoCivil = '', conjuge = '',
+            dataAniversario = '', enderecoVendedor = {}, razaoSocial = '', cnpj = '', enderecoEmpresa = '',
+            site = '', email = '', telefone = '' } = vendedor;
+    const { logradouro: lv = '', numero: nv = '', complemento: cv = '', bairro: bv = '', cidade: cdv = '', uf: ufv = '', cep: cepv = '' } = enderecoVendedor;
+    const { logradouro: li = '', numero: ni = '', complemento: ci = '', bairro: bi = '',
+            cidade: cidadeImovel = '', uf: ufImovel = '', cep: cepImovel = '',
+            inscricaoIptu = '', matricula = '', quitado = '', saldoDevedor = '', observacoes = '' } = imovel;
+    const { valor = '', condicoesPagamento = '' } = condicoesComerciais;
+
+    const endVendedor = tipoVendedor === 'PJ'
+      ? enderecoEmpresa
+      : [lv, nv, cv, bv, cdv, ufv, cepv].filter(Boolean).join(', ');
+
+    const endImovel = [li, ni, ci, bi].filter(Boolean).join(', ');
+
+    const row = [
+      id,                         // Preserva ID original
+      original['Data Cadastro'],  // Preserva data de cadastro original
+      tipo,
+      subtipos.join(', '),
+      autorizacaoVenda,
+      tipoVendedor,
+      tipoVendedor === 'PJ' ? razaoSocial : nome,
+      tipoVendedor === 'PJ' ? cnpj : cpf,
+      rg,
+      estadoCivil,
+      conjuge,
+      endVendedor,
+      dataAniversario,
+      endImovel,
+      cidadeImovel,
+      ufImovel,
+      cepImovel,
+      inscricaoIptu,
+      matricula,
+      quitado,
+      saldoDevedor,
+      observacoes,
+      valor,
+      condicoesPagamento,
+      email,
+      telefone,
+      tipoVendedor === 'PJ' ? site : '',
+      movimentacao,
+    ];
+
+    await updateRowById(IMOVEIS_SHEET, id, row);
+    res.json({ success: true, id });
+  } catch (err) {
+    console.error('[PUT /imovel]', err);
+    res.status(err.message.includes('não encontrado') ? 404 : 500).json({ error: err.message });
+  }
+}
+
+module.exports = { createImovel, listImoveis, getCidadeSigla, deleteImovel, updateImovel };

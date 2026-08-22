@@ -2,14 +2,17 @@
   <div class="max-w-4xl mx-auto px-4 py-10">
     <!-- Header -->
     <div class="mb-8">
-      <router-link to="/" class="btn-ghost mb-3 -ml-2">
+      <button type="button" @click="router.push(editMode ? '/listagem' : '/')" class="btn-ghost mb-3 -ml-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
         </svg>
         Voltar
-      </router-link>
-      <h1 class="text-2xl font-bold text-navy-700">Cadastro de Cliente</h1>
-      <p class="text-sm text-slate-500 mt-1">Registre as informações completas do cliente</p>
+      </button>
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl font-bold text-navy-700">{{ editMode ? 'Editar Cliente' : 'Cadastro de Cliente' }}</h1>
+        <span v-if="editMode" class="font-mono text-sm font-semibold text-navy-500 bg-navy-50 px-2 py-0.5 rounded-md">{{ editId }}</span>
+      </div>
+      <p class="text-sm text-slate-500 mt-1">{{ editMode ? 'Altere os dados e salve para atualizar na planilha' : 'Registre as informações completas do cliente' }}</p>
     </div>
 
     <form @submit.prevent="submit" class="space-y-6">
@@ -163,7 +166,7 @@
 
       <!-- Submit -->
       <div class="flex justify-end gap-3 pt-2">
-        <router-link to="/" class="btn-secondary">Cancelar</router-link>
+        <button type="button" @click="router.push(editMode ? '/listagem' : '/')" class="btn-secondary">Cancelar</button>
         <button type="submit" :disabled="loading" class="btn-primary">
           <svg v-if="loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -172,7 +175,7 @@
           <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
           </svg>
-          {{ loading ? 'Salvando...' : 'Salvar Cliente' }}
+          {{ loading ? 'Salvando...' : (editMode ? 'Atualizar Cliente' : 'Salvar Cliente') }}
         </button>
       </div>
     </form>
@@ -180,15 +183,18 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { criarCliente } from '../api/index.js';
+import { ref, onMounted } from 'vue';
+import { criarCliente, atualizarCliente, listarClientes } from '../api/index.js';
+import { useRouter, useRoute } from 'vue-router';
 import { useToast } from '../composables/useToast.js';
-import { useRouter } from 'vue-router';
 import { formatarCep, buscarEnderecoPorCep } from '../utils/cep.js';
 
-const router = useRouter();
+const router   = useRouter();
+const route    = useRoute();
 const { success, error } = useToast();
-const loading = ref(false);
+const loading  = ref(false);
+const editMode = ref(false);
+const editId   = ref('');
 
 // ── CEP lookup ────────────────────────────
 const cepLoading = ref(false);
@@ -236,6 +242,37 @@ function formatCPF(e) {
   form.value.cpf = v;
 }
 
+function buildPayload(f) {
+  return {
+    dadosPessoais: {
+      nome:            f.nome,
+      cpf:             f.cpf,
+      rg:              f.rg,
+      estadoCivil:     f.estadoCivil,
+      conjuge:         f.conjuge,
+      dataAniversario: f.dataAniversario,
+      endereco: {
+        logradouro:  f.logradouro,
+        numero:      f.numero,
+        complemento: f.complemento,
+        bairro:      f.bairro,
+        cidade:      f.cidade,
+        uf:          f.uf,
+        cep:         f.cep,
+      },
+    },
+    preferencias: {
+      hobbies:         f.hobbies,
+      gostosPessoais:  f.gostosPessoais,
+      bebidaPreferida: f.bebidaPreferida,
+    },
+    vinculo: {
+      imovelInteresse: f.imovelInteresse,
+    },
+    movimentacao: f.movimentacao,
+  };
+}
+
 async function submit() {
   const f = form.value;
   if (!f.nome.trim()) {
@@ -244,37 +281,14 @@ async function submit() {
   }
   loading.value = true;
   try {
-    const payload = {
-      dadosPessoais: {
-        nome:            f.nome,
-        cpf:             f.cpf,
-        rg:              f.rg,
-        estadoCivil:     f.estadoCivil,
-        conjuge:         f.conjuge,
-        dataAniversario: f.dataAniversario,
-        endereco: {
-          logradouro:  f.logradouro,
-          numero:      f.numero,
-          complemento: f.complemento,
-          bairro:      f.bairro,
-          cidade:      f.cidade,
-          uf:          f.uf,
-          cep:         f.cep,
-        },
-      },
-      preferencias: {
-        hobbies:        f.hobbies,
-        gostosPessoais: f.gostosPessoais,
-        bebidaPreferida: f.bebidaPreferida,
-      },
-      vinculo: {
-        imovelInteresse: f.imovelInteresse,
-      },
-      movimentacao: f.movimentacao,
-    };
-
-    const { data } = await criarCliente(payload);
-    success(`Cliente cadastrado com sucesso! ID: ${data.id}`);
+    const payload = buildPayload(f);
+    if (editMode.value) {
+      await atualizarCliente(editId.value, payload);
+      success('Cliente atualizado com sucesso!');
+    } else {
+      const { data } = await criarCliente(payload);
+      success(`Cliente cadastrado com sucesso! ID: ${data.id}`);
+    }
     setTimeout(() => router.push('/listagem'), 1800);
   } catch (err) {
     error(err?.response?.data?.error || 'Erro ao salvar cliente. Verifique a conexão com a API.');
@@ -282,6 +296,48 @@ async function submit() {
     loading.value = false;
   }
 }
+
+onMounted(async () => {
+  const idEditar = route.query.editar;
+  if (!idEditar) return;
+  editMode.value = true;
+  editId.value   = idEditar;
+  try {
+    const { data } = await listarClientes();
+    const registros = data.clientes || data;
+    const cliente = registros.find((c) => c['ID'] === idEditar);
+    if (!cliente) { error(`Cliente "${idEditar}" não encontrado.`); return; }
+
+    const dp  = cliente['Dados Pessoais'] || {};
+    const end = dp['Endereço']            || {};
+    const pref = cliente['Preferências']  || {};
+    const vin  = cliente['Vínculo']       || {};
+
+    form.value.nome            = dp['Nome']             || cliente['Nome'] || '';
+    form.value.cpf             = dp['CPF']              || cliente['CPF']  || '';
+    form.value.rg              = dp['RG']               || cliente['RG']   || '';
+    form.value.estadoCivil     = dp['Estado Civil']     || cliente['Estado Civil'] || '';
+    form.value.conjuge         = dp['Cônjuge']          || cliente['Cônjuge'] || '';
+    form.value.dataAniversario = dp['Data Aniversário'] || cliente['Data Aniversário'] || '';
+
+    form.value.logradouro  = end['Logradouro']  || cliente['Logradouro']  || '';
+    form.value.numero      = end['Número']      || cliente['Número']      || '';
+    form.value.complemento = end['Complemento'] || cliente['Complemento'] || '';
+    form.value.bairro      = end['Bairro']      || cliente['Bairro']      || '';
+    form.value.cidade      = end['Cidade']      || cliente['Cidade']      || '';
+    form.value.uf          = end['UF']          || cliente['UF']          || '';
+    form.value.cep         = end['CEP']         || cliente['CEP']         || '';
+
+    form.value.hobbies         = pref['Hobbies']          || cliente['Hobbies']          || '';
+    form.value.gostosPessoais  = pref['Gostos Pessoais']  || cliente['Gostos Pessoais']  || '';
+    form.value.bebidaPreferida = pref['Bebida Preferida'] || cliente['Bebida Preferida'] || '';
+
+    form.value.imovelInteresse = vin['Imóvel de Interesse'] || cliente['Imóvel de Interesse'] || '';
+    form.value.movimentacao    = cliente['Movimentação']    || '';
+  } catch {
+    error('Erro ao carregar dados do cliente.');
+  }
+});
 </script>
 
 <style scoped>

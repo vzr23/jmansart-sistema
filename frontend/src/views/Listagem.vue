@@ -136,6 +136,15 @@
                       Mov.
                     </button>
                     <button
+                      @click.stop="editarRegistro(row['ID'], 'imovel')"
+                      class="inline-flex items-center p-1.5 text-slate-400 hover:text-navy-600 hover:bg-navy-50 rounded-md transition mr-1"
+                      title="Editar imóvel"
+                    >
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                      </svg>
+                    </button>
+                    <button
                       @click.stop="pedirExclusao(row['ID'], row['Nome / Razão Social'])"
                       class="inline-flex items-center p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition mr-1"
                       title="Remover imóvel"
@@ -223,6 +232,15 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
                       </svg>
                       Mov.
+                    </button>
+                    <button
+                      @click.stop="editarRegistro(row['ID'], 'cliente')"
+                      class="inline-flex items-center p-1.5 text-slate-400 hover:text-navy-600 hover:bg-navy-50 rounded-md transition mr-1"
+                      title="Editar cliente"
+                    >
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                      </svg>
                     </button>
                     <button
                       @click.stop="pedirExclusao(row['ID'], row['Nome'])"
@@ -444,9 +462,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { listarImoveis, listarClientes, criarMovimentacao, listarMovimentacoes, deletarImovel, deletarCliente } from '../api/index.js';
 import { useToast } from '../composables/useToast.js';
 
+const router = useRouter();
 const { success, error } = useToast();
 
 const activeTab = ref('imoveis');
@@ -570,6 +590,12 @@ async function salvarMovimentacao() {
   } finally {
     movSaving.value = false;
   }
+}
+
+// ── Edição ───────────────────────────────
+function editarRegistro(id, tipo) {
+  const rota = tipo === 'imovel' ? '/imovel' : '/cliente';
+  router.push({ path: rota, query: { editar: id } });
 }
 
 // ── Exclusão ─────────────────────────────

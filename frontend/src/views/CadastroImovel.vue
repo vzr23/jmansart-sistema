@@ -2,14 +2,17 @@
   <div class="max-w-4xl mx-auto px-4 py-10">
     <!-- Page header -->
     <div class="mb-8">
-      <router-link to="/" class="btn-ghost mb-3 -ml-2">
+      <button type="button" @click="router.push(editMode ? '/listagem' : '/')" class="btn-ghost mb-3 -ml-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
         </svg>
         Voltar
-      </router-link>
-      <h1 class="text-2xl font-bold text-navy-700">Cadastro de Imóvel</h1>
-      <p class="text-sm text-slate-500 mt-1">Preencha todos os dados do imóvel a ser cadastrado</p>
+      </button>
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl font-bold text-navy-700">{{ editMode ? 'Editar Imóvel' : 'Cadastro de Imóvel' }}</h1>
+        <span v-if="editMode" class="font-mono text-sm font-semibold text-navy-500 bg-navy-50 px-2 py-0.5 rounded-md">{{ editId }}</span>
+      </div>
+      <p class="text-sm text-slate-500 mt-1">{{ editMode ? 'Altere os dados e salve para atualizar na planilha' : 'Preencha todos os dados do imóvel a ser cadastrado' }}</p>
     </div>
 
     <form @submit.prevent="submit" class="space-y-6">
@@ -391,8 +394,8 @@
         ></textarea>
       </div>
 
-      <!-- ID Preview -->
-      <div v-if="form.cidadeAbrev" class="card p-4 flex items-center gap-3 bg-navy-50 border-navy-200">
+      <!-- ID Preview (somente no modo cadastro) -->
+      <div v-if="!editMode && form.cidadeAbrev" class="card p-4 flex items-center gap-3 bg-navy-50 border-navy-200">
         <svg class="w-5 h-5 text-navy-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8.25h4.5"/>
         </svg>
@@ -406,7 +409,7 @@
 
       <!-- Submit -->
       <div class="flex justify-end gap-3 pt-2">
-        <router-link to="/" class="btn-secondary">Cancelar</router-link>
+        <button type="button" @click="router.push(editMode ? '/listagem' : '/')" class="btn-secondary">Cancelar</button>
         <button type="submit" :disabled="loading" class="btn-primary">
           <svg v-if="loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -415,7 +418,7 @@
           <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
           </svg>
-          {{ loading ? 'Salvando...' : 'Salvar Imóvel' }}
+          {{ loading ? 'Salvando...' : (editMode ? 'Atualizar Imóvel' : 'Salvar Imóvel') }}
         </button>
       </div>
     </form>
@@ -423,16 +426,19 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { criarImovel, buscarSigla } from '../api/index.js';
+import { ref, computed, onMounted } from 'vue';
+import { criarImovel, atualizarImovel, buscarSigla, listarImoveis } from '../api/index.js';
 import { useToast } from '../composables/useToast.js';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { formatarCep, buscarEnderecoPorCep } from '../utils/cep.js';
 
 const router = useRouter();
+const route  = useRoute();
 const { success, error } = useToast();
 
-const loading = ref(false);
+const loading  = ref(false);
+const editMode = ref(false);
+const editId   = ref('');
 
 // ── CEP lookup ────────────────────────────
 const cepVendedorLoading = ref(false);
@@ -555,71 +561,130 @@ async function sugerirSigla() {
   } catch { /* silencioso */ }
 }
 
+function buildPayload(f) {
+  return {
+    tipoImovel: { tipo: f.tipo, subtipos: f.subtipos },
+    autorizacaoVenda: f.autorizacaoVenda,
+    vendedor: {
+      tipoVendedor:    f.tipoVendedor,
+      nome:            f.nomeVendedor,
+      cpf:             f.cpf,
+      rg:              f.rg,
+      estadoCivil:     f.estadoCivil,
+      conjuge:         f.conjuge,
+      dataAniversario: f.dataAniversario,
+      enderecoVendedor: {
+        logradouro:  f.logradouroVendedor,
+        numero:      f.numeroVendedor,
+        complemento: f.complementoVendedor,
+        bairro:      f.bairroVendedor,
+        cidade:      f.cidadeVendedor,
+        uf:          f.ufVendedor,
+        cep:         f.cepVendedor,
+      },
+      razaoSocial:     f.razaoSocial,
+      cnpj:            f.cnpj,
+      enderecoEmpresa: f.enderecoEmpresa,
+      site:            f.site,
+      email:           f.email,
+      telefone:        f.telefone,
+    },
+    imovel: {
+      logradouro:    f.logradouroImovel,
+      numero:        f.numeroImovel,
+      complemento:   f.complementoImovel,
+      bairro:        f.bairroImovel,
+      cidade:        f.cidadeImovel,
+      cidadeAbrev:   f.cidadeAbrev,
+      uf:            f.ufImovel,
+      cep:           f.cepImovel,
+      inscricaoIptu: f.inscricaoIptu,
+      matricula:     f.matricula,
+      quitado:       f.quitado,
+      saldoDevedor:  f.saldoDevedor,
+      observacoes:   f.observacoes,
+    },
+    condicoesComerciais: {
+      valor:              f.valor,
+      condicoesPagamento: f.condicoesPagamento,
+    },
+    movimentacao: f.movimentacao,
+  };
+}
+
+onMounted(async () => {
+  const idEditar = route.query.editar;
+  if (!idEditar) return;
+
+  editMode.value = true;
+  editId.value   = idEditar;
+
+  try {
+    const { data: rows } = await listarImoveis(idEditar);
+    const row = rows.find((r) => r['ID'] === idEditar);
+    if (!row) { error('Imóvel não encontrado.'); return; }
+
+    const isPJ = row['Tipo Vendedor'] === 'PJ';
+    form.value.tipo            = row['Tipo'] || '';
+    form.value.subtipos        = row['Subtipo'] ? row['Subtipo'].split(', ').filter(Boolean) : [];
+    form.value.autorizacaoVenda = row['Autorização Venda'] || '';
+    form.value.tipoVendedor    = row['Tipo Vendedor'] || 'PF';
+
+    if (isPJ) {
+      form.value.razaoSocial     = row['Nome / Razão Social'] || '';
+      form.value.cnpj            = row['CPF / CNPJ'] || '';
+      form.value.enderecoEmpresa = row['Endereço Vendedor'] || '';
+      form.value.site            = row['Site'] || '';
+    } else {
+      form.value.nomeVendedor       = row['Nome / Razão Social'] || '';
+      form.value.cpf                = row['CPF / CNPJ'] || '';
+      form.value.rg                 = row['RG'] || '';
+      form.value.estadoCivil        = row['Estado Civil'] || '';
+      form.value.conjuge            = row['Cônjuge'] || '';
+      form.value.dataAniversario    = row['Data Aniversário'] || '';
+      form.value.logradouroVendedor = row['Endereço Vendedor'] || '';
+    }
+
+    form.value.email              = row['E-mail'] || '';
+    form.value.telefone           = row['Telefone'] || '';
+    form.value.logradouroImovel   = row['Endereço Imóvel'] || '';
+    form.value.cidadeImovel       = row['Cidade Imóvel'] || '';
+    form.value.ufImovel           = row['UF Imóvel'] || '';
+    form.value.cepImovel          = row['CEP Imóvel'] || '';
+    form.value.inscricaoIptu      = row['Inscrição IPTU'] || '';
+    form.value.matricula          = row['Matrícula'] || '';
+    form.value.quitado            = row['Quitado'] || '';
+    form.value.saldoDevedor       = row['Saldo Devedor'] || '';
+    form.value.observacoes        = row['Observações'] || '';
+    form.value.valor              = row['Valor'] || '';
+    form.value.condicoesPagamento = row['Condições de Pagamento'] || '';
+    form.value.movimentacao       = row['Movimentação'] || '';
+
+    // Extrai sigla do ID (ex: BC0012026 → BC)
+    const siglaMatch = idEditar.match(/^([A-Z]+)/);
+    form.value.cidadeAbrev = siglaMatch ? siglaMatch[1] : '';
+  } catch (err) {
+    error('Erro ao carregar dados do imóvel para edição.');
+  }
+});
+
 async function submit() {
   const f = form.value;
-  if (!f.cidadeAbrev) {
+  if (!editMode.value && !f.cidadeAbrev) {
     error('Informe a sigla da cidade para geração do ID.');
     return;
   }
   loading.value = true;
   try {
-    const payload = {
-      tipoImovel: {
-        tipo:      f.tipo,
-        subtipos:  f.subtipos,
-      },
-      autorizacaoVenda: f.autorizacaoVenda,
-      vendedor: {
-        tipoVendedor: f.tipoVendedor,
-        // Pessoa Física
-        nome:           f.nomeVendedor,
-        cpf:            f.cpf,
-        rg:             f.rg,
-        estadoCivil:    f.estadoCivil,
-        conjuge:        f.conjuge,
-        dataAniversario: f.dataAniversario,
-        enderecoVendedor: {
-          logradouro:  f.logradouroVendedor,
-          numero:      f.numeroVendedor,
-          complemento: f.complementoVendedor,
-          bairro:      f.bairroVendedor,
-          cidade:      f.cidadeVendedor,
-          uf:          f.ufVendedor,
-          cep:         f.cepVendedor,
-        },
-        // Pessoa Jurídica
-        razaoSocial:     f.razaoSocial,
-        cnpj:            f.cnpj,
-        enderecoEmpresa: f.enderecoEmpresa,
-        site:            f.site,
-        // Contato (PF e PJ)
-        email:    f.email,
-        telefone: f.telefone,
-      },
-      imovel: {
-        logradouro:    f.logradouroImovel,
-        numero:        f.numeroImovel,
-        complemento:   f.complementoImovel,
-        bairro:        f.bairroImovel,
-        cidade:        f.cidadeImovel,
-        cidadeAbrev:   f.cidadeAbrev,
-        uf:            f.ufImovel,
-        cep:           f.cepImovel,
-        inscricaoIptu: f.inscricaoIptu,
-        matricula:     f.matricula,
-        quitado:       f.quitado,
-        saldoDevedor:  f.saldoDevedor,
-        observacoes:   f.observacoes,
-      },
-      condicoesComerciais: {
-        valor:               f.valor,
-        condicoesPagamento:  f.condicoesPagamento,
-      },
-      movimentacao: f.movimentacao,
-    };
+    const payload = buildPayload(f);
 
-    const { data } = await criarImovel(payload);
-    success(`Imóvel cadastrado com sucesso! ID: ${data.id}`);
+    if (editMode.value) {
+      await atualizarImovel(editId.value, payload);
+      success('Imóvel atualizado com sucesso!');
+    } else {
+      const { data } = await criarImovel(payload);
+      success(`Imóvel cadastrado com sucesso! ID: ${data.id}`);
+    }
     setTimeout(() => router.push('/listagem'), 1800);
   } catch (err) {
     error(err?.response?.data?.error || 'Erro ao salvar imóvel. Verifique a conexão com a API.');

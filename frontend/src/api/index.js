@@ -25,15 +25,17 @@ api.interceptors.response.use(
 );
 
 // ── Imóveis ──────────────────────────────
-export const criarImovel    = (data)    => api.post('/imovel', data);
-export const listarImoveis  = (q = '')  => api.get('/imoveis', { params: q ? { q } : {} });
-export const buscarSigla    = (cidade)  => api.get('/imoveis/sigla', { params: { cidade } });
-export const deletarImovel  = (id)      => api.delete(`/imovel/${id}`);
+export const criarImovel     = (data)     => api.post('/imovel', data);
+export const listarImoveis   = (q = '')   => api.get('/imoveis', { params: q ? { q } : {} });
+export const buscarSigla     = (cidade)   => api.get('/imoveis/sigla', { params: { cidade } });
+export const atualizarImovel = (id, data) => api.put(`/imovel/${id}`, data);
+export const deletarImovel   = (id)       => api.delete(`/imovel/${id}`);
 
 // ── Clientes ─────────────────────────────
-export const criarCliente   = (data)    => api.post('/cliente', data);
-export const listarClientes = (q = '')  => api.get('/clientes', { params: q ? { q } : {} });
-export const deletarCliente = (id)      => api.delete(`/cliente/${id}`);
+export const criarCliente     = (data)     => api.post('/cliente', data);
+export const listarClientes   = (q = '')   => api.get('/clientes', { params: q ? { q } : {} });
+export const atualizarCliente = (id, data) => api.put(`/cliente/${id}`, data);
+export const deletarCliente   = (id)       => api.delete(`/cliente/${id}`);
 
 // ── Movimentações ─────────────────────────
 export const criarMovimentacao  = (data) => api.post('/movimentacao', data);

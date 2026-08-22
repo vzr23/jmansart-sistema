@@ -4,8 +4,8 @@ const cors    = require('cors');
 
 const { login }              = require('./routes/auth');
 const authMiddleware         = require('./middleware/auth');
-const { createImovel, listImoveis, getCidadeSigla, deleteImovel } = require('./routes/imoveis');
-const { createCliente, listClientes, deleteCliente }              = require('./routes/clientes');
+const { createImovel, listImoveis, getCidadeSigla, deleteImovel, updateImovel } = require('./routes/imoveis');
+const { createCliente, listClientes, deleteCliente, updateCliente }              = require('./routes/clientes');
 const { createMovimentacao, listMovimentacoes }                   = require('./routes/movimentacoes');
 
 const app  = express();
@@ -27,11 +27,13 @@ app.use(authMiddleware);
 app.post('/imovel',        createImovel);
 app.get('/imoveis',        listImoveis);
 app.get('/imoveis/sigla',  getCidadeSigla);
+app.put('/imovel/:id',     updateImovel);
 app.delete('/imovel/:id',  deleteImovel);
 
 // ── Clientes ─────────────────────────────
 app.post('/cliente',       createCliente);
 app.get('/clientes',       listClientes);
+app.put('/cliente/:id',    updateCliente);
 app.delete('/cliente/:id', deleteCliente);
 
 // ── Movimentações ─────────────────────────
