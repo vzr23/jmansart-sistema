@@ -3,7 +3,7 @@ const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendOtp(toEmail, code) {
-  await resend.emails.send({
+  const { data, error } = await resend.emails.send({
     from: 'J.Mansart Sistema <onboarding@resend.dev>',
     to: toEmail,
     subject: 'Código de verificação – J.Mansart',
@@ -21,6 +21,12 @@ async function sendOtp(toEmail, code) {
       </div>
     `,
   });
+
+  if (error) {
+    throw new Error(`Resend error: ${error.message}`);
+  }
+
+  return data;
 }
 
 module.exports = { sendOtp };
