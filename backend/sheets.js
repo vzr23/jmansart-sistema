@@ -21,6 +21,7 @@ const IMOVEIS_HEADERS = [
 const CLIENTES_HEADERS = [
   'ID', 'Data Cadastro', 'Nome', 'CPF', 'RG', 'Estado Civil', 'Cônjuge',
   'Endereço', 'Cidade', 'UF', 'CEP', 'Data Aniversário',
+  'E-mail', 'Telefone',
   'Hobbies', 'Gostos Pessoais', 'Bebida Preferida',
   'Imóvel de Interesse', 'Movimentação'
 ];

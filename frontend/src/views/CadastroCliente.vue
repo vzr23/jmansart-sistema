@@ -53,6 +53,14 @@
             <label class="input-label">Data de Aniversário</label>
             <input v-model="form.dataAniversario" type="date" class="input-field" />
           </div>
+          <div>
+            <label class="input-label">E-mail</label>
+            <input v-model="form.email" type="email" class="input-field" placeholder="email@exemplo.com" />
+          </div>
+          <div>
+            <label class="input-label">Telefone / WhatsApp</label>
+            <input v-model="form.telefone" class="input-field" placeholder="(00) 00000-0000" maxlength="16" @input="formatarTelefone" />
+          </div>
         </div>
 
         <!-- Endereço -->
@@ -221,6 +229,7 @@ async function buscarCep() {
 
 const form = ref({
   nome: '', cpf: '', rg: '', estadoCivil: '', conjuge: '', dataAniversario: '',
+  email: '', telefone: '',
   logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '', cep: '',
   hobbies: '', gostosPessoais: '', bebidaPreferida: '',
   imovelInteresse: '',
@@ -233,6 +242,20 @@ const ufs = [
   'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
   'PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO',
 ];
+
+function formatarTelefone(e) {
+  let v = e.target.value.replace(/\D/g, '').slice(0, 11);
+  if (v.length > 10) {
+    v = v.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+  } else if (v.length > 6) {
+    v = v.replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3');
+  } else if (v.length > 2) {
+    v = v.replace(/^(\d{2})(\d+)$/, '($1) $2');
+  } else if (v.length > 0) {
+    v = v.replace(/^(\d+)$/, '($1');
+  }
+  form.value.telefone = v;
+}
 
 function formatCPF(e) {
   let v = e.target.value.replace(/\D/g, '');
@@ -251,6 +274,8 @@ function buildPayload(f) {
       estadoCivil:     f.estadoCivil,
       conjuge:         f.conjuge,
       dataAniversario: f.dataAniversario,
+      email:           f.email,
+      telefone:        f.telefone,
       endereco: {
         logradouro:  f.logradouro,
         numero:      f.numero,
@@ -319,6 +344,8 @@ onMounted(async () => {
     form.value.estadoCivil     = dp['Estado Civil']     || cliente['Estado Civil'] || '';
     form.value.conjuge         = dp['Cônjuge']          || cliente['Cônjuge'] || '';
     form.value.dataAniversario = dp['Data Aniversário'] || cliente['Data Aniversário'] || '';
+    form.value.email           = dp['E-mail']           || cliente['E-mail']           || '';
+    form.value.telefone        = dp['Telefone']         || cliente['Telefone']         || '';
 
     form.value.logradouro  = end['Logradouro']  || cliente['Logradouro']  || '';
     form.value.numero      = end['Número']      || cliente['Número']      || '';

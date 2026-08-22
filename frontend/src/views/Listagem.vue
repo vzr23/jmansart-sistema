@@ -269,6 +269,8 @@
                       <detail label="UF" :value="row['UF']" />
                       <detail label="CEP" :value="row['CEP']" />
                       <detail label="Aniversário" :value="row['Data Aniversário']" />
+                      <detail label="E-mail" :value="row['E-mail']" />
+                      <detail label="Telefone" :value="row['Telefone']" />
                       <detail label="Hobbies" :value="row['Hobbies']" />
                       <detail label="Bebida Preferida" :value="row['Bebida Preferida']" />
                       <div class="sm:col-span-3">

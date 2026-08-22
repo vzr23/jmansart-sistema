@@ -21,7 +21,7 @@ async function createCliente(req, res) {
     // ── Desestrutura grupos do payload ──────────────────────────
     const { dadosPessoais = {}, preferencias = {}, vinculo = {}, movimentacao = '' } = b;
     const { nome = '', cpf = '', rg = '', estadoCivil = '', conjuge = '',
-            dataAniversario = '', endereco = {} } = dadosPessoais;
+            dataAniversario = '', email = '', telefone = '', endereco = {} } = dadosPessoais;
     const { logradouro = '', numero = '', complemento = '', bairro = '',
             cidade = '', uf = '', cep = '' } = endereco;
     const { hobbies = '', gostosPessoais = '', bebidaPreferida = '' } = preferencias;
@@ -45,6 +45,8 @@ async function createCliente(req, res) {
       uf,
       cep,
       dataAniversario,
+      email,
+      telefone,
       hobbies,
       gostosPessoais,
       bebidaPreferida,
@@ -107,7 +109,7 @@ async function updateCliente(req, res) {
     const b = req.body;
     const { dadosPessoais = {}, preferencias = {}, vinculo = {}, movimentacao = '' } = b;
     const { nome = '', cpf = '', rg = '', estadoCivil = '', conjuge = '',
-            dataAniversario = '', endereco = {} } = dadosPessoais;
+            dataAniversario = '', email = '', telefone = '', endereco = {} } = dadosPessoais;
     const { logradouro = '', numero = '', complemento = '', bairro = '',
             cidade = '', uf = '', cep = '' } = endereco;
     const { hobbies = '', gostosPessoais = '', bebidaPreferida = '' } = preferencias;
@@ -128,6 +130,8 @@ async function updateCliente(req, res) {
       uf,
       cep,
       dataAniversario,
+      email,
+      telefone,
       hobbies,
       gostosPessoais,
       bebidaPreferida,
