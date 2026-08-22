@@ -1,16 +1,10 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendOtp(toEmail, code) {
-  await transporter.sendMail({
-    from: `"J.Mansart Sistema" <${process.env.EMAIL_USER}>`,
+  await resend.emails.send({
+    from: 'J.Mansart Sistema <noreply@jmansart.com.br>',
     to: toEmail,
     subject: 'Código de verificação – J.Mansart',
     html: `
