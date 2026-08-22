@@ -107,7 +107,7 @@ const links = [
 ];
 
 function logout() {
-  sessionStorage.removeItem('authenticated');
+  localStorage.removeItem('jmansart_token');
   router.push('/login');
 }
 </script>
