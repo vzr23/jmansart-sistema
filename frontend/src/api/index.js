@@ -5,19 +5,38 @@ const api = axios.create({
   timeout: 15000,
 });
 
+// ── Adiciona token em todas as requisições ──
+api.interceptors.request.use((config) => {
+  const token = sessionStorage.getItem('jmansart_token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// ── Token expirado → volta para login ──────
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      sessionStorage.removeItem('jmansart_token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(err);
+  }
+);
+
 // ── Imóveis ──────────────────────────────
-export const criarImovel = (data) => api.post('/imovel', data);
-export const listarImoveis = (q = '') => api.get('/imoveis', { params: q ? { q } : {} });
-export const buscarSigla = (cidade) => api.get('/imoveis/sigla', { params: { cidade } });
-export const deletarImovel = (id) => api.delete(`/imovel/${id}`);
+export const criarImovel    = (data)    => api.post('/imovel', data);
+export const listarImoveis  = (q = '')  => api.get('/imoveis', { params: q ? { q } : {} });
+export const buscarSigla    = (cidade)  => api.get('/imoveis/sigla', { params: { cidade } });
+export const deletarImovel  = (id)      => api.delete(`/imovel/${id}`);
 
 // ── Clientes ─────────────────────────────
-export const criarCliente = (data) => api.post('/cliente', data);
-export const listarClientes = (q = '') => api.get('/clientes', { params: q ? { q } : {} });
-export const deletarCliente = (id) => api.delete(`/cliente/${id}`);
+export const criarCliente   = (data)    => api.post('/cliente', data);
+export const listarClientes = (q = '')  => api.get('/clientes', { params: q ? { q } : {} });
+export const deletarCliente = (id)      => api.delete(`/cliente/${id}`);
 
 // ── Movimentações ─────────────────────────
-export const criarMovimentacao = (data) => api.post('/movimentacao', data);
+export const criarMovimentacao  = (data) => api.post('/movimentacao', data);
 export const listarMovimentacoes = (ref) => api.get('/movimentacoes', { params: { ref } });
 
 export default api;

@@ -41,8 +41,12 @@
             {{ error }}
           </div>
 
-          <button type="submit" class="btn-primary w-full justify-center mt-2">
-            Entrar
+          <button type="submit" :disabled="loading" class="btn-primary w-full justify-center mt-2">
+            <svg v-if="loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+            {{ loading ? 'Entrando…' : 'Entrar' }}
           </button>
         </form>
       </div>
@@ -57,23 +61,31 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import api from '@/api/index.js';
 import logoUrl from '@/assets/logo.png';
 
-const router  = useRouter();
+const router   = useRouter();
 const username = ref('');
 const password = ref('');
 const error    = ref('');
+const loading  = ref(false);
 
-function handleLogin() {
-  const validUser = import.meta.env.VITE_AUTH_USER;
-  const validPass = import.meta.env.VITE_AUTH_PASS;
-
-  if (username.value === validUser && password.value === validPass) {
-    sessionStorage.setItem('authenticated', 'true');
+async function handleLogin() {
+  error.value   = '';
+  loading.value = true;
+  try {
+    const { data } = await api.post('/auth/login', {
+      user:     username.value,
+      password: password.value,
+    });
+    sessionStorage.setItem('jmansart_token', data.token);
     router.push('/');
-  } else {
-    error.value = 'Usuário ou senha incorretos.';
+  } catch (err) {
+    const msg = err.response?.data?.error;
+    error.value   = msg || 'Erro ao conectar com o servidor.';
     password.value = '';
+  } finally {
+    loading.value = false;
   }
 }
 </script>

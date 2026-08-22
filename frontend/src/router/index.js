@@ -20,14 +20,14 @@ const router = createRouter({
 });
 
 router.beforeEach((to, _from, next) => {
-  const authenticated = sessionStorage.getItem('authenticated') === 'true';
+  const token = sessionStorage.getItem('jmansart_token');
 
   if (to.meta.public) {
-    // Já autenticado: vai direto para Home em vez de mostrar login
-    authenticated ? next({ name: 'Home' }) : next();
+    // Já autenticado: vai direto para Home
+    token ? next({ name: 'Home' }) : next();
   } else {
-    // Rota protegida: exige autenticação
-    authenticated ? next() : next({ name: 'Login' });
+    // Rota protegida: exige token
+    token ? next() : next({ name: 'Login' });
   }
 });
 
