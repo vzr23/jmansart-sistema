@@ -30,29 +30,35 @@ async function createCliente(req, res) {
     const id = await generateClienteId();
     const now = new Date().toLocaleDateString('pt-BR');
 
+    // Endereço concatenado (mantém coluna original intacta)
+    const endConcat = [logradouro, numero, complemento, bairro, cidade, uf, cep].filter(Boolean).join(', ');
+
+    // A ordem dos campos DEVE seguir exatamente CLIENTES_HEADERS (23 colunas)
     const row = [
-      id,
-      now,
-      nome,
-      cpf,
-      rg,
-      estadoCivil,
-      conjuge,
-      logradouro,
-      numero,
-      complemento,
-      bairro,
-      cidade,
-      uf,
-      cep,
-      dataAniversario,
-      email,
-      telefone,
-      hobbies,
-      gostosPessoais,
-      bebidaPreferida,
-      imovelInteresse,
-      movimentacao,
+      id,               // 1  ID
+      now,              // 2  Data Cadastro
+      nome,             // 3  Nome
+      cpf,              // 4  CPF
+      rg,               // 5  RG
+      estadoCivil,      // 6  Estado Civil
+      conjuge,          // 7  Cônjuge
+      endConcat,        // 8  Endereço (concatenado)
+      cidade,           // 9  Cidade
+      uf,               // 10 UF
+      cep,              // 11 CEP
+      dataAniversario,  // 12 Data Aniversário
+      email,            // 13 E-mail
+      telefone,         // 14 Telefone
+      hobbies,          // 15 Hobbies
+      gostosPessoais,   // 16 Gostos Pessoais
+      bebidaPreferida,  // 17 Bebida Preferida
+      imovelInteresse,  // 18 Imóvel de Interesse
+      movimentacao,     // 19 Movimentação
+      // ── Colunas separadas de endereço (NOVAS, adicionadas ao final) ──
+      logradouro,       // 20 Logradouro
+      numero,           // 21 Número
+      complemento,      // 22 Complemento
+      bairro,           // 23 Bairro
     ];
 
     await appendRow(CLIENTES_SHEET, row);
@@ -124,29 +130,35 @@ async function updateCliente(req, res) {
     const { hobbies = '', gostosPessoais = '', bebidaPreferida = '' } = preferencias;
     const { imovelInteresse = '' } = vinculo;
 
+    // Endereço concatenado (mantém coluna original intacta)
+    const endConcat = [logradouro, numero, complemento, bairro, cidade, uf, cep].filter(Boolean).join(', ');
+
+    // A ordem dos campos DEVE seguir exatamente CLIENTES_HEADERS (23 colunas)
     const row = [
-      id,
-      original['Data Cadastro'],
-      nome,
-      cpf,
-      rg,
-      estadoCivil,
-      conjuge,
-      logradouro,
-      numero,
-      complemento,
-      bairro,
-      cidade,
-      uf,
-      cep,
-      dataAniversario,
-      email,
-      telefone,
-      hobbies,
-      gostosPessoais,
-      bebidaPreferida,
-      imovelInteresse,
-      movimentacao,
+      id,                        // 1  ID (preserva original)
+      original['Data Cadastro'], // 2  Data Cadastro (preserva original)
+      nome,                      // 3  Nome
+      cpf,                       // 4  CPF
+      rg,                        // 5  RG
+      estadoCivil,               // 6  Estado Civil
+      conjuge,                   // 7  Cônjuge
+      endConcat,                 // 8  Endereço (concatenado)
+      cidade,                    // 9  Cidade
+      uf,                        // 10 UF
+      cep,                       // 11 CEP
+      dataAniversario,           // 12 Data Aniversário
+      email,                     // 13 E-mail
+      telefone,                  // 14 Telefone
+      hobbies,                   // 15 Hobbies
+      gostosPessoais,            // 16 Gostos Pessoais
+      bebidaPreferida,           // 17 Bebida Preferida
+      imovelInteresse,           // 18 Imóvel de Interesse
+      movimentacao,              // 19 Movimentação
+      // ── Colunas separadas de endereço (NOVAS, adicionadas ao final) ──
+      logradouro,                // 20 Logradouro
+      numero,                    // 21 Número
+      complemento,               // 22 Complemento
+      bairro,                    // 23 Bairro
     ];
 
     await updateRowById(CLIENTES_SHEET, id, row);

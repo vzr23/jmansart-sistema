@@ -47,46 +47,54 @@ async function createImovel(req, res) {
     const id = await generateId(cidadeAbrev);
     const now = new Date().toLocaleDateString('pt-BR');
 
+    // Endereço concatenado (mantém coluna original intacta)
+    const endVendedor = tipoVendedor === 'PJ'
+      ? enderecoEmpresa
+      : [lv, nv, cv, bv, cdv, ufv, cepv].filter(Boolean).join(', ');
+    const endImovel = [li, ni, ci, bi].filter(Boolean).join(', ');
+
+    // A ordem dos campos DEVE seguir exatamente IMOVEIS_HEADERS (39 colunas)
     const row = [
-      id,
-      now,
-      tipo,
-      subtipos.join(', '),
-      autorizacaoVenda,
-      tipoVendedor,
-      tipoVendedor === 'PJ' ? razaoSocial : nome,
-      tipoVendedor === 'PJ' ? cnpj : cpf,
-      rg,
-      estadoCivil,
-      conjuge,
-      // Endereço Vendedor (campos separados)
-      tipoVendedor === 'PJ' ? enderecoEmpresa : lv,
-      tipoVendedor === 'PJ' ? '' : nv,
-      tipoVendedor === 'PJ' ? '' : cv,
-      tipoVendedor === 'PJ' ? '' : bv,
-      tipoVendedor === 'PJ' ? '' : cdv,
-      tipoVendedor === 'PJ' ? '' : ufv,
-      tipoVendedor === 'PJ' ? '' : cepv,
-      dataAniversario,
-      // Endereço Imóvel (campos separados)
-      li,
-      ni,
-      ci,
-      bi,
-      cidadeImovel,
-      ufImovel,
-      cepImovel,
-      inscricaoIptu,
-      matricula,
-      quitado,
-      saldoDevedor,
-      observacoes,
-      valor,
-      condicoesPagamento,
-      email,
-      telefone,
-      tipoVendedor === 'PJ' ? site : '',
-      movimentacao,
+      id,                                          // 1  ID
+      now,                                         // 2  Data Cadastro
+      tipo,                                        // 3  Tipo
+      subtipos.join(', '),                         // 4  Subtipo
+      autorizacaoVenda,                            // 5  Autorização Venda
+      tipoVendedor,                                // 6  Tipo Vendedor
+      tipoVendedor === 'PJ' ? razaoSocial : nome,  // 7  Nome / Razão Social
+      tipoVendedor === 'PJ' ? cnpj : cpf,          // 8  CPF / CNPJ
+      rg,                                          // 9  RG
+      estadoCivil,                                 // 10 Estado Civil
+      conjuge,                                     // 11 Cônjuge
+      endVendedor,                                 // 12 Endereço Vendedor (concatenado)
+      dataAniversario,                             // 13 Data Aniversário
+      endImovel,                                   // 14 Endereço Imóvel (concatenado)
+      cidadeImovel,                                // 15 Cidade Imóvel
+      ufImovel,                                    // 16 UF Imóvel
+      cepImovel,                                   // 17 CEP Imóvel
+      inscricaoIptu,                               // 18 Inscrição IPTU
+      matricula,                                   // 19 Matrícula
+      quitado,                                     // 20 Quitado
+      saldoDevedor,                                // 21 Saldo Devedor
+      observacoes,                                 // 22 Observações
+      valor,                                       // 23 Valor
+      condicoesPagamento,                          // 24 Condições de Pagamento
+      email,                                       // 25 E-mail
+      telefone,                                    // 26 Telefone
+      tipoVendedor === 'PJ' ? site : '',           // 27 Site
+      movimentacao,                                // 28 Movimentação
+      // ── Colunas separadas de endereço (NOVAS, adicionadas ao final) ──
+      tipoVendedor === 'PJ' ? enderecoEmpresa : lv, // 29 Logradouro Vendedor
+      tipoVendedor === 'PJ' ? '' : nv,              // 30 Número Vendedor
+      tipoVendedor === 'PJ' ? '' : cv,              // 31 Complemento Vendedor
+      tipoVendedor === 'PJ' ? '' : bv,              // 32 Bairro Vendedor
+      tipoVendedor === 'PJ' ? '' : cdv,             // 33 Cidade Vendedor
+      tipoVendedor === 'PJ' ? '' : ufv,             // 34 UF Vendedor
+      tipoVendedor === 'PJ' ? '' : cepv,            // 35 CEP Vendedor
+      li,                                           // 36 Logradouro Imóvel
+      ni,                                           // 37 Número Imóvel
+      ci,                                           // 38 Complemento Imóvel
+      bi,                                           // 39 Bairro Imóvel
     ];
 
     await appendRow(IMOVEIS_SHEET, row);
@@ -169,46 +177,54 @@ async function updateImovel(req, res) {
             inscricaoIptu = '', matricula = '', quitado = '', saldoDevedor = '', observacoes = '' } = imovel;
     const { valor = '', condicoesPagamento = '' } = condicoesComerciais;
 
+    // Endereço concatenado (mantém coluna original intacta)
+    const endVendedor = tipoVendedor === 'PJ'
+      ? enderecoEmpresa
+      : [lv, nv, cv, bv, cdv, ufv, cepv].filter(Boolean).join(', ');
+    const endImovel = [li, ni, ci, bi].filter(Boolean).join(', ');
+
+    // A ordem dos campos DEVE seguir exatamente IMOVEIS_HEADERS (39 colunas)
     const row = [
-      id,                         // Preserva ID original
-      original['Data Cadastro'],  // Preserva data de cadastro original
-      tipo,
-      subtipos.join(', '),
-      autorizacaoVenda,
-      tipoVendedor,
-      tipoVendedor === 'PJ' ? razaoSocial : nome,
-      tipoVendedor === 'PJ' ? cnpj : cpf,
-      rg,
-      estadoCivil,
-      conjuge,
-      // Endereço Vendedor (campos separados)
-      tipoVendedor === 'PJ' ? enderecoEmpresa : lv,
-      tipoVendedor === 'PJ' ? '' : nv,
-      tipoVendedor === 'PJ' ? '' : cv,
-      tipoVendedor === 'PJ' ? '' : bv,
-      tipoVendedor === 'PJ' ? '' : cdv,
-      tipoVendedor === 'PJ' ? '' : ufv,
-      tipoVendedor === 'PJ' ? '' : cepv,
-      dataAniversario,
-      // Endereço Imóvel (campos separados)
-      li,
-      ni,
-      ci,
-      bi,
-      cidadeImovel,
-      ufImovel,
-      cepImovel,
-      inscricaoIptu,
-      matricula,
-      quitado,
-      saldoDevedor,
-      observacoes,
-      valor,
-      condicoesPagamento,
-      email,
-      telefone,
-      tipoVendedor === 'PJ' ? site : '',
-      movimentacao,
+      id,                                          // 1  ID (preserva original)
+      original['Data Cadastro'],                   // 2  Data Cadastro (preserva original)
+      tipo,                                        // 3  Tipo
+      subtipos.join(', '),                         // 4  Subtipo
+      autorizacaoVenda,                            // 5  Autorização Venda
+      tipoVendedor,                                // 6  Tipo Vendedor
+      tipoVendedor === 'PJ' ? razaoSocial : nome,  // 7  Nome / Razão Social
+      tipoVendedor === 'PJ' ? cnpj : cpf,          // 8  CPF / CNPJ
+      rg,                                          // 9  RG
+      estadoCivil,                                 // 10 Estado Civil
+      conjuge,                                     // 11 Cônjuge
+      endVendedor,                                 // 12 Endereço Vendedor (concatenado)
+      dataAniversario,                             // 13 Data Aniversário
+      endImovel,                                   // 14 Endereço Imóvel (concatenado)
+      cidadeImovel,                                // 15 Cidade Imóvel
+      ufImovel,                                    // 16 UF Imóvel
+      cepImovel,                                   // 17 CEP Imóvel
+      inscricaoIptu,                               // 18 Inscrição IPTU
+      matricula,                                   // 19 Matrícula
+      quitado,                                     // 20 Quitado
+      saldoDevedor,                                // 21 Saldo Devedor
+      observacoes,                                 // 22 Observações
+      valor,                                       // 23 Valor
+      condicoesPagamento,                          // 24 Condições de Pagamento
+      email,                                       // 25 E-mail
+      telefone,                                    // 26 Telefone
+      tipoVendedor === 'PJ' ? site : '',           // 27 Site
+      movimentacao,                                // 28 Movimentação
+      // ── Colunas separadas de endereço (NOVAS, adicionadas ao final) ──
+      tipoVendedor === 'PJ' ? enderecoEmpresa : lv, // 29 Logradouro Vendedor
+      tipoVendedor === 'PJ' ? '' : nv,              // 30 Número Vendedor
+      tipoVendedor === 'PJ' ? '' : cv,              // 31 Complemento Vendedor
+      tipoVendedor === 'PJ' ? '' : bv,              // 32 Bairro Vendedor
+      tipoVendedor === 'PJ' ? '' : cdv,             // 33 Cidade Vendedor
+      tipoVendedor === 'PJ' ? '' : ufv,             // 34 UF Vendedor
+      tipoVendedor === 'PJ' ? '' : cepv,            // 35 CEP Vendedor
+      li,                                           // 36 Logradouro Imóvel
+      ni,                                           // 37 Número Imóvel
+      ci,                                           // 38 Complemento Imóvel
+      bi,                                           // 39 Bairro Imóvel
     ];
 
     await updateRowById(IMOVEIS_SHEET, id, row);
