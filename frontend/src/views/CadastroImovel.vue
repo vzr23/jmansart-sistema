@@ -612,6 +612,42 @@ function buildPayload(f) {
   };
 }
 
+// Divide endereço concatenado antigo nos campos separados
+// Formato vendedor: "Logradouro, Número, Complemento, Bairro, Cidade, UF, CEP"
+function parseEnderecoVendedor(str) {
+  if (!str) return {};
+  const parts = str.split(', ');
+  let cep = '', uf = '', cidade = '';
+  // CEP: detecta padrão 00000-000 ou 8 dígitos no final
+  if (/^\d{5}-?\d{3}$/.test(parts[parts.length - 1])) cep = parts.pop();
+  // UF: 2 letras maiúsculas
+  if (/^[A-Z]{2}$/.test(parts[parts.length - 1])) uf = parts.pop();
+  // Cidade: próximo do final (somente se encontrou UF)
+  if (uf && parts.length > 1) cidade = parts.pop();
+  // Restante: logradouro, numero, complemento, bairro
+  return {
+    logradouro:  parts[0] || '',
+    numero:      parts[1] || '',
+    complemento: parts[2] || '',
+    bairro:      parts[3] || '',
+    cidade,
+    uf,
+    cep,
+  };
+}
+
+// Formato imóvel: "Logradouro, Número, Complemento, Bairro"
+function parseEnderecoImovel(str) {
+  if (!str) return {};
+  const parts = str.split(', ');
+  return {
+    logradouro:  parts[0] || '',
+    numero:      parts[1] || '',
+    complemento: parts[2] || '',
+    bairro:      parts[3] || '',
+  };
+}
+
 onMounted(async () => {
   const idEditar = route.query.editar;
   if (!idEditar) return;
@@ -642,21 +678,42 @@ onMounted(async () => {
       form.value.estadoCivil        = row['Estado Civil'] || '';
       form.value.conjuge            = row['Cônjuge'] || '';
       form.value.dataAniversario    = row['Data Aniversário'] || '';
-      form.value.logradouroVendedor  = row['Logradouro Vendedor']  || row['Endereço Vendedor'] || '';
-      form.value.numeroVendedor      = row['Número Vendedor']      || '';
-      form.value.complementoVendedor = row['Complemento Vendedor'] || '';
-      form.value.bairroVendedor      = row['Bairro Vendedor']      || '';
-      form.value.cidadeVendedor      = row['Cidade Vendedor']      || '';
-      form.value.ufVendedor          = row['UF Vendedor']          || '';
-      form.value.cepVendedor         = row['CEP Vendedor']         || '';
+      // Registro novo: usa colunas separadas. Registro antigo: parseia o concatenado.
+      if (row['Logradouro Vendedor']) {
+        form.value.logradouroVendedor  = row['Logradouro Vendedor']  || '';
+        form.value.numeroVendedor      = row['Número Vendedor']      || '';
+        form.value.complementoVendedor = row['Complemento Vendedor'] || '';
+        form.value.bairroVendedor      = row['Bairro Vendedor']      || '';
+        form.value.cidadeVendedor      = row['Cidade Vendedor']      || '';
+        form.value.ufVendedor          = row['UF Vendedor']          || '';
+        form.value.cepVendedor         = row['CEP Vendedor']         || '';
+      } else {
+        const pv = parseEnderecoVendedor(row['Endereço Vendedor'] || '');
+        form.value.logradouroVendedor  = pv.logradouro;
+        form.value.numeroVendedor      = pv.numero;
+        form.value.complementoVendedor = pv.complemento;
+        form.value.bairroVendedor      = pv.bairro;
+        form.value.cidadeVendedor      = pv.cidade;
+        form.value.ufVendedor          = pv.uf;
+        form.value.cepVendedor         = pv.cep;
+      }
     }
 
     form.value.email              = row['E-mail'] || '';
     form.value.telefone           = row['Telefone'] || '';
-    form.value.logradouroImovel   = row['Logradouro Imóvel']  || row['Endereço Imóvel'] || '';
-    form.value.numeroImovel       = row['Número Imóvel']      || '';
-    form.value.complementoImovel  = row['Complemento Imóvel'] || '';
-    form.value.bairroImovel       = row['Bairro Imóvel']      || '';
+    // Registro novo: usa colunas separadas. Registro antigo: parseia o concatenado.
+    if (row['Logradouro Imóvel']) {
+      form.value.logradouroImovel   = row['Logradouro Imóvel']  || '';
+      form.value.numeroImovel       = row['Número Imóvel']      || '';
+      form.value.complementoImovel  = row['Complemento Imóvel'] || '';
+      form.value.bairroImovel       = row['Bairro Imóvel']      || '';
+    } else {
+      const pi = parseEnderecoImovel(row['Endereço Imóvel'] || '');
+      form.value.logradouroImovel   = pi.logradouro;
+      form.value.numeroImovel       = pi.numero;
+      form.value.complementoImovel  = pi.complemento;
+      form.value.bairroImovel       = pi.bairro;
+    }
     form.value.cidadeImovel       = row['Cidade Imóvel'] || '';
     form.value.ufImovel           = row['UF Imóvel'] || '';
     form.value.cepImovel          = row['CEP Imóvel'] || '';
