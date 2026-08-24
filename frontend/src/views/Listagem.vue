@@ -17,7 +17,7 @@
       <button
         v-for="tab in tabs"
         :key="tab.key"
-        @click="activeTab = tab.key; buscar()"
+        @click="activeTab = tab.key; page = 1; buscar()"
         class="px-5 py-2 rounded-md text-sm font-semibold transition-all"
         :class="activeTab === tab.key
           ? 'bg-white text-navy-700 shadow-sm'
@@ -45,7 +45,7 @@
           ? 'Buscar por ID, nome ou cidade...'
           : 'Buscar por ID, nome ou CPF...'"
       />
-      <button v-if="search" @click="search = ''; buscar()"
+      <button v-if="search" @click="search = ''; page = 1; buscar()"
         class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -291,6 +291,86 @@
       </div>
     </div>
 
+    <!-- ── PAGINAÇÃO ──────────────────────────────────────── -->
+    <div
+      v-if="!loading && !erroApi && totalPages > 1"
+      class="flex items-center justify-between mt-5 px-1"
+    >
+      <!-- Info -->
+      <p class="text-xs text-slate-500">
+        Página {{ page }} de {{ totalPages }}
+      </p>
+
+      <!-- Botões -->
+      <div class="flex items-center gap-1">
+        <!-- Primeira -->
+        <button
+          @click="irParaPagina(1)"
+          :disabled="page === 1"
+          class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          title="Primeira página"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5"/>
+          </svg>
+        </button>
+
+        <!-- Anterior -->
+        <button
+          @click="irParaPagina(page - 1)"
+          :disabled="page === 1"
+          class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          title="Página anterior"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+          </svg>
+        </button>
+
+        <!-- Números de página -->
+        <template v-for="p in totalPages" :key="p">
+          <button
+            v-if="p === 1 || p === totalPages || (p >= page - 1 && p <= page + 1)"
+            @click="irParaPagina(p)"
+            class="min-w-[32px] h-8 px-2 rounded-lg text-xs font-semibold transition"
+            :class="p === page
+              ? 'bg-navy-700 text-white shadow'
+              : 'text-slate-600 hover:bg-slate-100'"
+          >
+            {{ p }}
+          </button>
+          <span
+            v-else-if="p === page - 2 || p === page + 2"
+            class="text-slate-400 text-xs px-1"
+          >…</span>
+        </template>
+
+        <!-- Próxima -->
+        <button
+          @click="irParaPagina(page + 1)"
+          :disabled="page === totalPages"
+          class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          title="Próxima página"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </button>
+
+        <!-- Última -->
+        <button
+          @click="irParaPagina(totalPages)"
+          :disabled="page === totalPages"
+          class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          title="Última página"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 4.5l7.5 7.5-7.5 7.5m6-15l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
     <!-- ═══════════════════════════════════════════════════════
          MODAL DE CONFIRMAÇÃO DE EXCLUSÃO
     ══════════════════════════════════════════════════════════ -->
@@ -471,32 +551,36 @@ import { useToast } from '../composables/useToast.js';
 const router = useRouter();
 const { success, error } = useToast();
 
-const activeTab = ref('imoveis');
-const search = ref('');
-const rows = ref([]);
-const totalImoveis = ref(0);
+const activeTab   = ref('imoveis');
+const search      = ref('');
+const rows        = ref([]);
+const totalImoveis  = ref(0);
 const totalClientes = ref(0);
-const loading = ref(false);
-const erroApi = ref('');
-const expanded = ref(null);
+const loading     = ref(false);
+const erroApi     = ref('');
+const expanded    = ref(null);
+
+// ── Paginação ─────────────────────────────
+const page       = ref(1);
+const totalPages = ref(1);
+const PAGE_SIZE  = 10;
 
 // ── Confirmação de exclusão ───────────────
-const confirmExclusao = ref(null); // { id, nome, tabela } ou null
+const confirmExclusao = ref(null);
 const excluindo = ref(false);
 
 // ── Modal de movimentação ─────────────────
-const modal = ref(null);          // { id, nome, tipo } ou null
+const modal = ref(null);
 const movForm = ref({ usuario: '', descricao: '' });
 const movHistorico = ref([]);
 const movLoading = ref(false);
-const movSaving = ref(false);
+const movSaving  = ref(false);
 
 const tabs = [
   { key: 'imoveis',  label: 'Imóveis'  },
   { key: 'clientes', label: 'Clientes' },
 ];
 
-// Componente inline de detalhe
 const detail = {
   props: ['label', 'value'],
   template: `
@@ -510,6 +594,7 @@ const detail = {
 let debounceTimer = null;
 function buscarDebounced() {
   clearTimeout(debounceTimer);
+  page.value = 1;
   debounceTimer = setTimeout(buscar, 350);
 }
 
@@ -519,13 +604,15 @@ async function buscar() {
   expanded.value = null;
   try {
     if (activeTab.value === 'imoveis') {
-      const { data } = await listarImoveis(search.value);
-      rows.value = data;
-      totalImoveis.value = data.length;
+      const { data } = await listarImoveis(search.value, page.value, PAGE_SIZE);
+      rows.value        = data.data;
+      totalImoveis.value = data.total;
+      totalPages.value   = data.totalPages;
     } else {
-      const { data } = await listarClientes(search.value);
-      rows.value = data;
-      totalClientes.value = data.length;
+      const { data } = await listarClientes(search.value, page.value, PAGE_SIZE);
+      rows.value         = data.data;
+      totalClientes.value = data.total;
+      totalPages.value    = data.totalPages;
     }
   } catch (e) {
     erroApi.value = e?.response?.data?.error || e.message || 'Erro desconhecido';
@@ -535,15 +622,20 @@ async function buscar() {
   }
 }
 
+function irParaPagina(p) {
+  if (p < 1 || p > totalPages.value || p === page.value) return;
+  page.value = p;
+  buscar();
+}
+
 function toggle(i) {
   expanded.value = expanded.value === i ? null : i;
 }
 
-// ── Funções do modal ──────────────────────
+// ── Modal ─────────────────────────────────
 function abrirMovimentacao(id, nome, tipo) {
   modal.value = { id, nome, tipo };
   movForm.value.descricao = '';
-  // Recupera nome salvo localmente
   movForm.value.usuario = localStorage.getItem('jmansart_usuario') || '';
   carregarHistorico();
 }
@@ -577,11 +669,11 @@ async function salvarMovimentacao() {
   movSaving.value = true;
   try {
     await criarMovimentacao({
-      usuario:       movForm.value.usuario.trim() || 'Sem identificação',
-      tipo:          modal.value.tipo,
-      idReferencia:  modal.value.id,
+      usuario:        movForm.value.usuario.trim() || 'Sem identificação',
+      tipo:           modal.value.tipo,
+      idReferencia:   modal.value.id,
       nomeReferencia: modal.value.nome,
-      descricao:     movForm.value.descricao.trim(),
+      descricao:      movForm.value.descricao.trim(),
     });
     salvarUsuarioLocal();
     movForm.value.descricao = '';
@@ -613,13 +705,11 @@ async function confirmarExclusao() {
     if (tabela === 'imoveis') await deletarImovel(id);
     else await deletarCliente(id);
 
-    // Remove da lista local sem precisar recarregar
-    rows.value = rows.value.filter((r) => r['ID'] !== id);
-    if (tabela === 'imoveis') totalImoveis.value = Math.max(0, totalImoveis.value - 1);
-    else totalClientes.value = Math.max(0, totalClientes.value - 1);
-
     confirmExclusao.value = null;
     success('Registro removido com sucesso.');
+    // Se a página ficou vazia e não é a primeira, volta uma página
+    if (rows.value.length === 1 && page.value > 1) page.value--;
+    await buscar();
   } catch (err) {
     error(err?.response?.data?.error || 'Erro ao remover registro.');
   } finally {
@@ -629,10 +719,10 @@ async function confirmarExclusao() {
 
 onMounted(async () => {
   buscar();
+  // Carrega total da aba inativa para mostrar badge correto
   try {
-    const [im, cl] = await Promise.all([listarImoveis(), listarClientes()]);
-    totalImoveis.value = im.data.length;
-    totalClientes.value = cl.data.length;
+    const { data } = await listarClientes('', 1, 1);
+    totalClientes.value = data.total;
   } catch { /* silencioso */ }
 });
 </script>

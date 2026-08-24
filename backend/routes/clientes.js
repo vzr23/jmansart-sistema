@@ -75,7 +75,15 @@ async function listClientes(req, res) {
             (r['CPF'] || '').toLowerCase().includes(q)
         )
       : rows;
-    res.json(filtered);
+
+    const total      = filtered.length;
+    const limit      = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
+    const page       = Math.max(1, parseInt(req.query.page)  || 1);
+    const start      = (page - 1) * limit;
+    const data       = filtered.slice(start, start + limit);
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    res.json({ data, total, page, totalPages });
   } catch (err) {
     console.error('[GET /clientes]', err);
     res.status(500).json({ error: err.message });
