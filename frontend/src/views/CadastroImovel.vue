@@ -621,7 +621,7 @@ onMounted(async () => {
 
   try {
     const { data: rows } = await listarImoveis(idEditar);
-    const row = rows.find((r) => r['ID'] === idEditar);
+    const row = (rows.data || rows).find((r) => r['ID'] === idEditar);
     if (!row) { error('Imóvel não encontrado.'); return; }
 
     const isPJ = row['Tipo Vendedor'] === 'PJ';

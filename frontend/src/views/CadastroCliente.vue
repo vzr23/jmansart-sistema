@@ -329,7 +329,7 @@ onMounted(async () => {
   editId.value   = idEditar;
   try {
     const { data } = await listarClientes();
-    const registros = data.clientes || data;
+    const registros = data.data || data.clientes || data;
     const cliente = registros.find((c) => c['ID'] === idEditar);
     if (!cliente) { error(`Cliente "${idEditar}" não encontrado.`); return; }
 
