@@ -642,12 +642,21 @@ onMounted(async () => {
       form.value.estadoCivil        = row['Estado Civil'] || '';
       form.value.conjuge            = row['Cônjuge'] || '';
       form.value.dataAniversario    = row['Data Aniversário'] || '';
-      form.value.logradouroVendedor = row['Endereço Vendedor'] || '';
+      form.value.logradouroVendedor  = row['Logradouro Vendedor']  || row['Endereço Vendedor'] || '';
+      form.value.numeroVendedor      = row['Número Vendedor']      || '';
+      form.value.complementoVendedor = row['Complemento Vendedor'] || '';
+      form.value.bairroVendedor      = row['Bairro Vendedor']      || '';
+      form.value.cidadeVendedor      = row['Cidade Vendedor']      || '';
+      form.value.ufVendedor          = row['UF Vendedor']          || '';
+      form.value.cepVendedor         = row['CEP Vendedor']         || '';
     }
 
     form.value.email              = row['E-mail'] || '';
     form.value.telefone           = row['Telefone'] || '';
-    form.value.logradouroImovel   = row['Endereço Imóvel'] || '';
+    form.value.logradouroImovel   = row['Logradouro Imóvel']  || row['Endereço Imóvel'] || '';
+    form.value.numeroImovel       = row['Número Imóvel']      || '';
+    form.value.complementoImovel  = row['Complemento Imóvel'] || '';
+    form.value.bairroImovel       = row['Bairro Imóvel']      || '';
     form.value.cidadeImovel       = row['Cidade Imóvel'] || '';
     form.value.ufImovel           = row['UF Imóvel'] || '';
     form.value.cepImovel          = row['CEP Imóvel'] || '';

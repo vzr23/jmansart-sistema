@@ -30,8 +30,6 @@ async function createCliente(req, res) {
     const id = await generateClienteId();
     const now = new Date().toLocaleDateString('pt-BR');
 
-    const enderecoStr = [logradouro, numero, complemento, bairro].filter(Boolean).join(', ');
-
     const row = [
       id,
       now,
@@ -40,7 +38,10 @@ async function createCliente(req, res) {
       rg,
       estadoCivil,
       conjuge,
-      enderecoStr,
+      logradouro,
+      numero,
+      complemento,
+      bairro,
       cidade,
       uf,
       cep,
@@ -123,8 +124,6 @@ async function updateCliente(req, res) {
     const { hobbies = '', gostosPessoais = '', bebidaPreferida = '' } = preferencias;
     const { imovelInteresse = '' } = vinculo;
 
-    const enderecoStr = [logradouro, numero, complemento, bairro].filter(Boolean).join(', ');
-
     const row = [
       id,
       original['Data Cadastro'],
@@ -133,7 +132,10 @@ async function updateCliente(req, res) {
       rg,
       estadoCivil,
       conjuge,
-      enderecoStr,
+      logradouro,
+      numero,
+      complemento,
+      bairro,
       cidade,
       uf,
       cep,

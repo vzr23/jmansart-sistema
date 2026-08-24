@@ -47,13 +47,6 @@ async function createImovel(req, res) {
     const id = await generateId(cidadeAbrev);
     const now = new Date().toLocaleDateString('pt-BR');
 
-    // ── Monta strings de endereço para a planilha ────────────────
-    const endVendedor = tipoVendedor === 'PJ'
-      ? enderecoEmpresa
-      : [lv, nv, cv, bv, cdv, ufv, cepv].filter(Boolean).join(', ');
-
-    const endImovel = [li, ni, ci, bi].filter(Boolean).join(', ');
-
     const row = [
       id,
       now,
@@ -66,9 +59,20 @@ async function createImovel(req, res) {
       rg,
       estadoCivil,
       conjuge,
-      endVendedor,
+      // Endereço Vendedor (campos separados)
+      tipoVendedor === 'PJ' ? enderecoEmpresa : lv,
+      tipoVendedor === 'PJ' ? '' : nv,
+      tipoVendedor === 'PJ' ? '' : cv,
+      tipoVendedor === 'PJ' ? '' : bv,
+      tipoVendedor === 'PJ' ? '' : cdv,
+      tipoVendedor === 'PJ' ? '' : ufv,
+      tipoVendedor === 'PJ' ? '' : cepv,
       dataAniversario,
-      endImovel,
+      // Endereço Imóvel (campos separados)
+      li,
+      ni,
+      ci,
+      bi,
       cidadeImovel,
       ufImovel,
       cepImovel,
@@ -165,12 +169,6 @@ async function updateImovel(req, res) {
             inscricaoIptu = '', matricula = '', quitado = '', saldoDevedor = '', observacoes = '' } = imovel;
     const { valor = '', condicoesPagamento = '' } = condicoesComerciais;
 
-    const endVendedor = tipoVendedor === 'PJ'
-      ? enderecoEmpresa
-      : [lv, nv, cv, bv, cdv, ufv, cepv].filter(Boolean).join(', ');
-
-    const endImovel = [li, ni, ci, bi].filter(Boolean).join(', ');
-
     const row = [
       id,                         // Preserva ID original
       original['Data Cadastro'],  // Preserva data de cadastro original
@@ -183,9 +181,20 @@ async function updateImovel(req, res) {
       rg,
       estadoCivil,
       conjuge,
-      endVendedor,
+      // Endereço Vendedor (campos separados)
+      tipoVendedor === 'PJ' ? enderecoEmpresa : lv,
+      tipoVendedor === 'PJ' ? '' : nv,
+      tipoVendedor === 'PJ' ? '' : cv,
+      tipoVendedor === 'PJ' ? '' : bv,
+      tipoVendedor === 'PJ' ? '' : cdv,
+      tipoVendedor === 'PJ' ? '' : ufv,
+      tipoVendedor === 'PJ' ? '' : cepv,
       dataAniversario,
-      endImovel,
+      // Endereço Imóvel (campos separados)
+      li,
+      ni,
+      ci,
+      bi,
       cidadeImovel,
       ufImovel,
       cepImovel,

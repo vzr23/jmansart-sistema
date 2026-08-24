@@ -11,8 +11,12 @@ const MOVIMENTACOES_SHEET = 'Movimentações';
 const IMOVEIS_HEADERS = [
   'ID', 'Data Cadastro', 'Tipo', 'Subtipo', 'Autorização Venda',
   'Tipo Vendedor', 'Nome / Razão Social', 'CPF / CNPJ', 'RG',
-  'Estado Civil', 'Cônjuge', 'Endereço Vendedor', 'Data Aniversário',
-  'Endereço Imóvel', 'Cidade Imóvel', 'UF Imóvel', 'CEP Imóvel',
+  'Estado Civil', 'Cônjuge',
+  'Logradouro Vendedor', 'Número Vendedor', 'Complemento Vendedor',
+  'Bairro Vendedor', 'Cidade Vendedor', 'UF Vendedor', 'CEP Vendedor',
+  'Data Aniversário',
+  'Logradouro Imóvel', 'Número Imóvel', 'Complemento Imóvel', 'Bairro Imóvel',
+  'Cidade Imóvel', 'UF Imóvel', 'CEP Imóvel',
   'Inscrição IPTU', 'Matrícula', 'Quitado', 'Saldo Devedor',
   'Observações', 'Valor', 'Condições de Pagamento',
   'E-mail', 'Telefone', 'Site', 'Movimentação'
@@ -20,7 +24,8 @@ const IMOVEIS_HEADERS = [
 
 const CLIENTES_HEADERS = [
   'ID', 'Data Cadastro', 'Nome', 'CPF', 'RG', 'Estado Civil', 'Cônjuge',
-  'Endereço', 'Cidade', 'UF', 'CEP', 'Data Aniversário',
+  'Logradouro', 'Número', 'Complemento', 'Bairro', 'Cidade', 'UF', 'CEP',
+  'Data Aniversário',
   'E-mail', 'Telefone',
   'Hobbies', 'Gostos Pessoais', 'Bebida Preferida',
   'Imóvel de Interesse', 'Movimentação'
@@ -96,7 +101,8 @@ async function ensureHeaders(sheets, tabName, headers) {
     range,
   });
   const firstRow = (res.data.values || [])[0] || [];
-  if (!firstRow[0]) {
+  const needsUpdate = !firstRow[0] || JSON.stringify(firstRow) !== JSON.stringify(headers);
+  if (needsUpdate) {
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: `${tabName}!A1`,
