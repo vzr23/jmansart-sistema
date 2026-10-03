@@ -1,73 +1,20 @@
 require('dotenv').config();
-const express = require('express');
-const cors    = require('cors');
+const { validarAmbiente } = require('./config/env');
 
-const { login, verifyOtpRoute }  = require('./routes/auth');
-const authMiddleware             = require('./middleware/auth');
-const { createImovel, listImoveis, getCidadeSigla, deleteImovel, updateImovel } = require('./routes/imoveis');
-const { createCliente, listClientes, deleteCliente, updateCliente }              = require('./routes/clientes');
-const { createMovimentacao, listMovimentacoes }                   = require('./routes/movimentacoes');
-
-// ── Validação de Variáveis de Ambiente ───
-const requiredEnvVars = [
-  'AUTH_USER',
-  'AUTH_PASS',
-  'AUTH_JWT_SECRET',
-  'AUTH_EMAIL',
-  'EMAIL_USER',
-  'EMAIL_PASS',
-];
-const missing = requiredEnvVars.filter(v => !process.env[v]);
-if (missing.length > 0) {
-  console.error(`\n❌ ERRO: Variáveis de ambiente obrigatórias não definidas:\n   ${missing.join(', ')}\n`);
+// ── Validação de Variáveis de Ambiente (recusa iniciar se algo crítico faltar, inclusive CORS_ORIGIN) ───
+const ambiente = validarAmbiente(process.env);
+if (!ambiente.ok) {
+  console.error(`\n❌ ERRO: configuração de ambiente inválida:\n   - ${ambiente.problemas.join('\n   - ')}\n`);
   process.exit(1);
 }
 
-const app  = express();
+const { criarApp } = require('./app');
+
 const PORT = process.env.PORT || 3001;
-
-// ── Middlewares globais ───────────────────
-const corsOptions = {
-  origin: process.env.CORS_ORIGIN || '*',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-};
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Responde preflights OPTIONS
-app.use(express.json({ limit: '2mb' }));
-app.use(express.urlencoded({ extended: true }));
-
-// ── Rotas públicas (sem autenticação) ────
-app.get('/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
-app.post('/auth/login',      login);
-app.post('/auth/verify-otp', verifyOtpRoute);
-
-// ── JWT: protege todas as rotas abaixo ───
-app.use(authMiddleware);
-
-// ── Imóveis ──────────────────────────────
-app.post('/imovel',        createImovel);
-app.get('/imoveis',        listImoveis);
-app.get('/imoveis/sigla',  getCidadeSigla);
-app.put('/imovel/:id',     updateImovel);
-app.delete('/imovel/:id',  deleteImovel);
-
-// ── Clientes ─────────────────────────────
-app.post('/cliente',       createCliente);
-app.get('/clientes',       listClientes);
-app.put('/cliente/:id',    updateCliente);
-app.delete('/cliente/:id', deleteCliente);
-
-// ── Movimentações ─────────────────────────
-app.post('/movimentacao',  createMovimentacao);
-app.get('/movimentacoes',  listMovimentacoes);
-
-// ── Erros ─────────────────────────────────
-app.use((_req, res) => res.status(404).json({ error: 'Rota não encontrada' }));
-app.use((err, _req, res, _next) => {
-  console.error(err);
-  res.status(500).json({ error: err.message || 'Erro interno' });
+const hops = Number.parseInt(process.env.TRUST_PROXY_HOPS ?? '1', 10);
+const app = criarApp({
+  corsOrigin: process.env.CORS_ORIGIN,
+  trustProxyHops: Number.isInteger(hops) && hops >= 0 ? hops : 1,
 });
 
 app.listen(PORT, () => {

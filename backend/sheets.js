@@ -1,4 +1,5 @@
-const { google } = require('googleapis');
+// googleapis é pesado: só é carregado quando a planilha é realmente usada (partida do servidor e testes ficam rápidos).
+const getGoogle = () => require('googleapis').google;
 const path = require('path');
 
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '15BLBHc0watZaGCzhzItPDTRYmWa4UUoxAaGorIXUunQ';
@@ -52,6 +53,7 @@ function colLetter(n) {
 }
 
 function getAuth() {
+  const google = getGoogle();
   if (process.env.GOOGLE_CREDENTIALS) {
     const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
     return new google.auth.GoogleAuth({
@@ -68,7 +70,7 @@ function getAuth() {
 async function getSheets() {
   const auth = getAuth();
   const client = await auth.getClient();
-  return google.sheets({ version: 'v4', auth: client });
+  return getGoogle().sheets({ version: 'v4', auth: client });
 }
 
 /**

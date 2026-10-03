@@ -104,6 +104,7 @@ const links = [
   { to: '/imovel',   label: 'Cadastrar Imóvel' },
   { to: '/cliente',  label: 'Cadastrar Cliente' },
   { to: '/listagem', label: 'Listagem' },
+  { to: '/contrato',  label: 'Contrato' },
 ];
 
 function logout() {

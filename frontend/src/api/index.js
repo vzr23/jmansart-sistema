@@ -41,4 +41,31 @@ export const deletarCliente   = (id)       => api.delete(`/cliente/${id}`);
 export const criarMovimentacao  = (data) => api.post('/movimentacao', data);
 export const listarMovimentacoes = (ref) => api.get('/movimentacoes', { params: { ref } });
 
+// ── Contrato: Autorização para Venda ──────
+// Os dados pessoais só trafegam no corpo (POST); a URL leva apenas o ID do imóvel.
+export const buscarImovelContrato = (id)    => api.get(`/contratos/autorizacao-venda/imovel/${encodeURIComponent(id)}`);
+export const previaContrato       = (dados) => api.post('/contratos/autorizacao-venda/previa', dados);
+export const gerarContratoPdf     = (dados) => api.post('/contratos/autorizacao-venda', dados, { responseType: 'blob', timeout: 30000 });
+
+/** Extrai { status, mensagem, erros[] } de um erro do axios (inclusive quando a resposta veio como Blob). */
+export async function lerErroApi(err) {
+  const r = err?.response;
+  if (!r) {
+    return {
+      status: 0,
+      mensagem: err?.code === 'ECONNABORTED' ? 'O servidor demorou demais. Tente novamente.' : 'Sem conexão com o servidor.',
+      erros: [],
+    };
+  }
+  let corpo = r.data;
+  if (typeof Blob !== 'undefined' && corpo instanceof Blob) {
+    try { corpo = JSON.parse(await corpo.text()); } catch { corpo = {}; }
+  }
+  return {
+    status: r.status,
+    mensagem: (corpo && typeof corpo.error === 'string' && corpo.error) || 'Não foi possível concluir o pedido.',
+    erros: Array.isArray(corpo?.erros) ? corpo.erros : [],
+  };
+}
+
 export default api;

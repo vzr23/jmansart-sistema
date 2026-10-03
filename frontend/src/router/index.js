@@ -4,6 +4,7 @@ import CadastroImovel  from '../views/CadastroImovel.vue';
 import CadastroCliente from '../views/CadastroCliente.vue';
 import Listagem        from '../views/Listagem.vue';
 import Login           from '../views/Login.vue';
+import ContratoAutorizacao from '../views/ContratoAutorizacao.vue';
 
 const routes = [
   { path: '/login',    name: 'Login',          component: Login,           meta: { public: true } },
@@ -11,6 +12,7 @@ const routes = [
   { path: '/imovel',   name: 'CadastroImovel',  component: CadastroImovel },
   { path: '/cliente',  name: 'CadastroCliente', component: CadastroCliente },
   { path: '/listagem', name: 'Listagem',        component: Listagem },
+  { path: '/contrato', name: 'ContratoAutorizacao', component: ContratoAutorizacao },
 ];
 
 const router = createRouter({

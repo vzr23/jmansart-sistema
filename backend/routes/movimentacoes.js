@@ -16,6 +16,23 @@ async function generateMovId() {
   return `MOV${String(maxSeq + 1).padStart(4, '0')}`;
 }
 
+// Registra uma movimentação (usada pela rota POST /movimentacao e pelo gerador de contratos).
+// Data/hora no fuso de São Paulo (o servidor do Railway roda em UTC).
+async function registrarMovimentacao({ usuario = '', tipo = '', idReferencia = '', nomeReferencia = '', descricao = '' }) {
+  const id = await generateMovId();
+
+  // Formato: 21/08/2026 14:35:22
+  const agora = new Date().toLocaleString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  });
+
+  const row = [id, agora, usuario, tipo, idReferencia, nomeReferencia, descricao];
+  await appendRow(MOVIMENTACOES_SHEET, row);
+  return { id, dataHora: agora };
+}
+
 // POST /movimentacao
 async function createMovimentacao(req, res) {
   try {
@@ -25,18 +42,8 @@ async function createMovimentacao(req, res) {
       return res.status(400).json({ error: 'idReferencia e descricao são obrigatórios.' });
     }
 
-    const id = await generateMovId();
-
-    // Formato: 21/08/2026 14:35:22
-    const agora = new Date().toLocaleString('pt-BR', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-    });
-
-    const row = [id, agora, usuario, tipo, idReferencia, nomeReferencia, descricao];
-    await appendRow(MOVIMENTACOES_SHEET, row);
-
-    res.status(201).json({ success: true, id, dataHora: agora });
+    const { id, dataHora } = await registrarMovimentacao({ usuario, tipo, idReferencia, nomeReferencia, descricao });
+    res.status(201).json({ success: true, id, dataHora });
   } catch (err) {
     console.error('[POST /movimentacao]', err);
     res.status(500).json({ error: err.message });
@@ -59,4 +66,4 @@ async function listMovimentacoes(req, res) {
   }
 }
 
-module.exports = { createMovimentacao, listMovimentacoes };
+module.exports = { createMovimentacao, listMovimentacoes, registrarMovimentacao };
