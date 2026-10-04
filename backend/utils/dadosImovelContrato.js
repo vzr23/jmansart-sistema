@@ -51,17 +51,23 @@ function mapearImovelParaContrato(row) {
   const vendTemDetalhe = ['Logradouro Vendedor', 'Número Vendedor', 'Bairro Vendedor', 'Cidade Vendedor'].some((c) => t(row[c]));
   const vendTexto = t(row['Endereço Vendedor']);
   let vend = {};
+  let vendAntigo = false;
   if (!vendTemDetalhe && vendTexto) {
     vend = pj ? { logradouro: vendTexto } : separarEndereco(vendTexto, true);
-    avisos.push('Endereço do vendedor lido do cadastro antigo (campo único). Confira rua, número, complemento e bairro.');
+    vendAntigo = true;
   }
   // Endereço do imóvel: mesma regra, com o texto único "Endereço Imóvel".
   const imovTemDetalhe = ['Logradouro Imóvel', 'Número Imóvel', 'Bairro Imóvel'].some((c) => t(row[c]));
   const imovTexto = t(row['Endereço Imóvel']);
   let imov = {};
+  let imovAntigo = false;
   if (!imovTemDetalhe && imovTexto) {
     imov = separarEndereco(imovTexto, false);
-    avisos.push('Endereço do imóvel lido do cadastro antigo (campo único). Confira rua, número, complemento e bairro.');
+    imovAntigo = true;
+  }
+  if (vendAntigo || imovAntigo) {
+    const quais = vendAntigo && imovAntigo ? 'Endereços do vendedor e do imóvel lidos' : vendAntigo ? 'Endereço do vendedor lido' : 'Endereço do imóvel lido';
+    avisos.push(`${quais} do cadastro antigo (campo único). Confira rua, número, complemento e bairro.`);
   }
   return {
     id: t(row['ID']),

@@ -72,7 +72,7 @@ test('cadastro antigo: endereço único do imóvel e do vendedor é separado, co
   assert.equal(m.imovel.logradouro_imovel, 'Rua 999, 50, Apto 20');
   assert.equal(m.imovel.bairro_imovel, 'Centro');
   assert.equal(m.imovel.matricula, '', 'traço sozinho na planilha significa "sem dado"');
-  assert.equal(m.avisos.length, 2);
+  assert.deepEqual(m.avisos, ['Endereços do vendedor e do imóvel lidos do cadastro antigo (campo único). Confira rua, número, complemento e bairro.']);
 });
 
 test('cadastro antigo: com 3 partes, a terceira é bairro (ou complemento se começar com Apto/Casa/Bloco...)', () => {
@@ -82,6 +82,8 @@ test('cadastro antigo: com 3 partes, a terceira é bairro (ou complemento se com
   const b = mapearImovelParaContrato({ 'Endereço Imóvel': 'Rua A, 10, Apto 3' });
   assert.equal(b.imovel.logradouro_imovel, 'Rua A, 10, Apto 3');
   assert.equal(b.imovel.bairro_imovel, '');
+  assert.equal(b.avisos.length, 1);
+  assert.match(b.avisos[0], /^Endereço do imóvel lido/);
 });
 
 test('colunas detalhadas têm prioridade sobre o endereço único e não geram aviso', () => {
