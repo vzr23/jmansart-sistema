@@ -138,10 +138,14 @@ function gerarPdfContrato(texto, opcoes = {}) {
         usarFonte(FONTE.normal, TAMANHO);
         return doc.heightOfString(semMarcas(par), opcoesTexto(alinhamento, recuo)) + alturaLinha;
       };
+      // Respiros do fecho, em "linhas de texto": antes da data, antes de cada traço (espaço para assinar) e depois de cada bloco.
+      const ESPACO_ANTES_DATA = 1.6;
+      const ESPACO_ANTES_ASSINATURA = 2.6;
+      const ESPACO_APOS_ASSINATURA = 0.9;
       const linhasAssinatura = (par) => par.split('\n').map((l) => l.trim()).filter(Boolean);
       const alturaAssinatura = (par) => {
         const n = linhasAssinatura(par).length - 1; // linhas de texto abaixo do traço
-        return 1.6 * alturaLinha + 4 + n * (alturaLinha + ENTRELINHA) + 0.6 * alturaLinha + FOLGA;
+        return ESPACO_ANTES_ASSINATURA * alturaLinha + 4 + n * (alturaLinha + ENTRELINHA) + ESPACO_APOS_ASSINATURA * alturaLinha + FOLGA;
       };
 
       // ── Escrita ───────────────────────────────────────────────────
@@ -163,14 +167,14 @@ function gerarPdfContrato(texto, opcoes = {}) {
         const linhas = linhasAssinatura(par);
         garantirEspaco(alturaAssinatura(par)); // o bloco nunca é dividido entre páginas
         usarFonte(FONTE.normal, TAMANHO);
-        doc.moveDown(1.6);
+        doc.moveDown(ESPACO_ANTES_ASSINATURA);
         const paginaInicio = paginaAtual();
         const yLinha = doc.y;
         doc.moveTo(MARGENS.left, yLinha).lineTo(MARGENS.left + 240, yLinha).lineWidth(0.7).strokeColor('#000000').stroke();
         doc.y = yLinha + 4;
         linhas.slice(1).forEach((l) => escreverTexto(l, { alinhamento: 'left' }));
         usarFonte(FONTE.normal, TAMANHO);
-        doc.moveDown(0.6);
+        doc.moveDown(ESPACO_APOS_ASSINATURA);
         relatorio?.assinaturas.push({ paginaInicio, paginaFim: paginaAtual() });
       };
 
@@ -186,7 +190,7 @@ function gerarPdfContrato(texto, opcoes = {}) {
             break;
           case 'linhaCurta':
             usarFonte(FONTE.normal, TAMANHO);
-            doc.moveDown(0.8);
+            doc.moveDown(ESPACO_ANTES_DATA);
             escreverTexto(item.par, { alinhamento: 'left' });
             break;
           default: {
@@ -200,7 +204,7 @@ function gerarPdfContrato(texto, opcoes = {}) {
 
       const alturaItem = (item) => {
         if (item.tipo === 'assinatura') return alturaAssinatura(item.par);
-        if (item.tipo === 'linhaCurta') return 0.8 * alturaLinha + alturaTexto(item.par, 'left');
+        if (item.tipo === 'linhaCurta') return ESPACO_ANTES_DATA * alturaLinha + alturaTexto(item.par, 'left');
         return alturaTexto(item.par, 'justify') + 0.7 * alturaLinha;
       };
 
