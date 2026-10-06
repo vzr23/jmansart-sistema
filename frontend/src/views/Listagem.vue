@@ -205,6 +205,7 @@
                 <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">ID</th>
                 <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Nome</th>
                 <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">CPF</th>
+                <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Tipo</th>
                 <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Cidade</th>
                 <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Imóvel de Interesse</th>
                 <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Cadastro</th>
@@ -219,6 +220,10 @@
                   </td>
                   <td class="px-4 py-3 font-medium">{{ row['Nome'] || '—' }}</td>
                   <td class="px-4 py-3 text-slate-500 font-mono text-xs">{{ row['CPF'] || '—' }}</td>
+                  <td class="px-4 py-3 whitespace-nowrap">
+                    <span v-if="row['Tipo de Cliente']" class="text-xs font-medium text-navy-600 bg-navy-50 px-2 py-0.5 rounded-md">{{ row['Tipo de Cliente'] }}</span>
+                    <span v-else class="text-slate-400">—</span>
+                  </td>
                   <td class="px-4 py-3">{{ row['Cidade'] || '—' }}</td>
                   <td class="px-4 py-3 font-mono text-navy-600 font-medium">{{ row['Imóvel de Interesse'] || '—' }}</td>
                   <td class="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{{ row['Data Cadastro'] || '—' }}</td>
@@ -260,7 +265,7 @@
                 </tr>
                 <!-- Expandido -->
                 <tr v-if="expanded === i" class="bg-slate-50/70">
-                  <td colspan="7" class="px-6 py-5">
+                  <td colspan="8" class="px-6 py-5">
                     <div class="grid sm:grid-cols-3 gap-x-8 gap-y-3 text-sm">
                       <detail label="RG" :value="row['RG']" />
                       <detail label="Estado Civil" :value="row['Estado Civil']" />

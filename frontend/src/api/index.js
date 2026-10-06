@@ -33,7 +33,8 @@ export const deletarImovel   = (id)       => api.delete(`/imovel/${id}`);
 
 // ── Clientes ─────────────────────────────
 export const criarCliente     = (data)     => api.post('/cliente', data);
-export const listarClientes   = (q = '', page = 1, limit = 10) => api.get('/clientes', { params: { ...(q ? { q } : {}), page, limit } });
+// tipo = 'Vendedor' | 'Comprador' | 'Ambos' (opcional). 'Vendedor' também traz quem é 'Ambos'.
+export const listarClientes   = (q = '', page = 1, limit = 10, tipo = '') => api.get('/clientes', { params: { ...(q ? { q } : {}), ...(tipo ? { tipo } : {}), page, limit } });
 export const atualizarCliente = (id, data) => api.put(`/cliente/${id}`, data);
 export const deletarCliente   = (id)       => api.delete(`/cliente/${id}`);
 

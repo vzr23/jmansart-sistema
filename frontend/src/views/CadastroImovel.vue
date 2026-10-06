@@ -116,6 +116,44 @@
         <!-- PF Fields -->
         <transition name="fade">
           <div v-if="form.tipoVendedor === 'PF'" class="space-y-5">
+            <!-- Busca de vendedor já cadastrado como cliente -->
+            <div class="relative" data-teste="busca-vendedor">
+              <label class="input-label">Buscar vendedor cadastrado</label>
+              <input
+                v-model="buscaVendedor"
+                @input="aoDigitarBuscaVendedor"
+                @focus="abrirListaVendedor"
+                @click="abrirListaVendedor"
+                @blur="listaVendedorAberta = false"
+                autocomplete="off"
+                class="input-field"
+                placeholder="Digite o nome ou CPF do vendedor..."
+              />
+              <ul
+                v-if="listaVendedorAberta"
+                class="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-64 overflow-auto"
+              >
+                <li v-if="buscandoVendedor" class="px-4 py-3 text-sm text-slate-400">Buscando...</li>
+                <li v-else-if="erroBuscaVendedor" class="px-4 py-3 text-sm text-red-500">{{ erroBuscaVendedor }}</li>
+                <li v-else-if="resultadosVendedor.length === 0" class="px-4 py-3 text-sm text-slate-400">
+                  Nenhum vendedor encontrado. Marque o cliente como Vendedor ou Ambos no cadastro de cliente.
+                </li>
+                <li
+                  v-for="c in resultadosVendedor"
+                  :key="c['ID']"
+                  @mousedown.prevent="usarCliente(c)"
+                  class="px-4 py-2.5 text-sm cursor-pointer hover:bg-navy-50 flex items-center justify-between gap-3"
+                >
+                  <span class="font-medium text-slate-700">{{ c['Nome'] || '—' }}</span>
+                  <span class="text-xs text-slate-400 font-mono whitespace-nowrap">{{ c['CPF'] || c['ID'] }}</span>
+                </li>
+              </ul>
+              <p class="text-xs text-slate-400 mt-1">Só aparecem clientes marcados como Vendedor ou Ambos. Os dados são copiados para o imóvel e você pode ajustar depois.</p>
+              <div v-if="form.idCliente" class="mt-2 inline-flex items-center gap-2 text-xs text-navy-600 bg-navy-50 px-2.5 py-1 rounded-md">
+                <span>Dados copiados do cliente <span class="font-mono font-semibold">{{ form.idCliente }}</span></span>
+                <button type="button" class="text-navy-400 hover:text-navy-700 underline" @click="form.idCliente = ''">Desvincular</button>
+              </div>
+            </div>
             <div class="grid sm:grid-cols-2 gap-4">
               <div>
                 <label class="input-label">Nome completo *</label>
@@ -426,8 +464,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { criarImovel, atualizarImovel, buscarSigla, listarImoveis } from '../api/index.js';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { criarImovel, atualizarImovel, buscarSigla, listarImoveis, listarClientes } from '../api/index.js';
 import { useToast } from '../composables/useToast.js';
 import { useRouter, useRoute } from 'vue-router';
 import { formatarCep, buscarEnderecoPorCep } from '../utils/cep.js';
@@ -494,6 +532,7 @@ const form = ref({
   // Seção 3
   tipoVendedor: 'PF',
   // PF
+  idCliente: '', // ID do cliente escolhido na busca (só referência)
   nomeVendedor: '', cpf: '', rg: '', estadoCivil: '', conjuge: '', dataAniversario: '',
   logradouroVendedor: '', numeroVendedor: '', complementoVendedor: '',
   bairroVendedor: '', cepVendedor: '', cidadeVendedor: '', ufVendedor: '',
@@ -567,6 +606,7 @@ function buildPayload(f) {
     autorizacaoVenda: f.autorizacaoVenda,
     vendedor: {
       tipoVendedor:    f.tipoVendedor,
+      idCliente:       f.tipoVendedor === 'PF' ? f.idCliente : '',
       nome:            f.nomeVendedor,
       cpf:             f.cpf,
       rg:              f.rg,
@@ -648,6 +688,74 @@ function parseEnderecoImovel(str) {
   };
 }
 
+// ── Busca de vendedor já cadastrado (aba Clientes) ───────────────────────────
+const buscaVendedor        = ref('');
+const resultadosVendedor   = ref([]);
+const listaVendedorAberta  = ref(false);
+const buscandoVendedor     = ref(false);
+const erroBuscaVendedor    = ref('');
+let timerBuscaVendedor     = null;
+let seqBuscaVendedor       = 0;
+
+async function buscarVendedores() {
+  const minha = ++seqBuscaVendedor;
+  buscandoVendedor.value = true;
+  erroBuscaVendedor.value = '';
+  try {
+    const { data } = await listarClientes(buscaVendedor.value.trim(), 1, 30, 'Vendedor');
+    if (minha !== seqBuscaVendedor) return; // chegou uma busca mais nova; ignora esta
+    resultadosVendedor.value = data.data || [];
+  } catch {
+    if (minha !== seqBuscaVendedor) return;
+    resultadosVendedor.value = [];
+    erroBuscaVendedor.value = 'Não foi possível buscar os vendedores.';
+  } finally {
+    if (minha === seqBuscaVendedor) buscandoVendedor.value = false;
+  }
+}
+
+function abrirListaVendedor() {
+  listaVendedorAberta.value = true;
+  buscarVendedores();
+}
+
+function aoDigitarBuscaVendedor() {
+  listaVendedorAberta.value = true;
+  clearTimeout(timerBuscaVendedor);
+  timerBuscaVendedor = setTimeout(buscarVendedores, 250);
+}
+
+// Copia os dados do cliente para os campos do vendedor (continuam editáveis).
+function usarCliente(c) {
+  const f = form.value;
+  f.nomeVendedor    = c['Nome'] || '';
+  f.cpf             = c['CPF'] || '';
+  f.rg              = c['RG'] || '';
+  f.estadoCivil     = c['Estado Civil'] || '';
+  f.conjuge         = c['Cônjuge'] || '';
+  f.dataAniversario = c['Data Aniversário'] || '';
+  f.email           = c['E-mail'] || '';
+  f.telefone        = c['Telefone'] || '';
+  // Cliente novo: colunas separadas. Cliente antigo: separa o endereço concatenado
+  // ("Logradouro, Número, Complemento, Bairro, Cidade, UF, CEP"), o mesmo formato do vendedor.
+  const end = c['Logradouro'] ? {
+    logradouro: c['Logradouro'], numero: c['Número'] || '', complemento: c['Complemento'] || '',
+    bairro: c['Bairro'] || '', cidade: c['Cidade'] || '', uf: c['UF'] || '', cep: c['CEP'] || '',
+  } : parseEnderecoVendedor(c['Endereço'] || '');
+  f.logradouroVendedor  = end.logradouro  || '';
+  f.numeroVendedor      = end.numero      || '';
+  f.complementoVendedor = end.complemento || '';
+  f.bairroVendedor      = end.bairro      || '';
+  f.cidadeVendedor      = end.cidade || c['Cidade'] || '';
+  f.ufVendedor          = end.uf     || c['UF']     || '';
+  f.cepVendedor         = end.cep    || c['CEP']    || '';
+  f.idCliente           = c['ID'] || '';
+  buscaVendedor.value = '';
+  listaVendedorAberta.value = false;
+}
+
+onBeforeUnmount(() => clearTimeout(timerBuscaVendedor));
+
 onMounted(async () => {
   const idEditar = route.query.editar;
   if (!idEditar) return;
@@ -675,6 +783,7 @@ onMounted(async () => {
       form.value.nomeVendedor       = row['Nome / Razão Social'] || '';
       form.value.cpf                = row['CPF / CNPJ'] || '';
       form.value.rg                 = row['RG'] || '';
+      form.value.idCliente          = row['ID Cliente Vendedor'] || '';
       form.value.estadoCivil        = row['Estado Civil'] || '';
       form.value.conjuge            = row['Cônjuge'] || '';
       form.value.dataAniversario    = row['Data Aniversário'] || '';

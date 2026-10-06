@@ -28,6 +28,14 @@
             <label class="input-label">Nome completo *</label>
             <input v-model="form.nome" class="input-field" placeholder="Nome completo" required />
           </div>
+          <div class="sm:col-span-2">
+            <label class="input-label">Tipo de cliente</label>
+            <select v-model="form.tipoCliente" class="input-field">
+              <option value="">Selecione...</option>
+              <option v-for="t in tiposCliente" :key="t.valor" :value="t.valor">{{ t.rotulo }}</option>
+            </select>
+            <p class="text-xs text-slate-400 mt-1">Quem é Vendedor ou Ambos aparece na busca de vendedor ao cadastrar um imóvel.</p>
+          </div>
           <div>
             <label class="input-label">CPF</label>
             <input v-model="form.cpf" class="input-field" placeholder="000.000.000-00" maxlength="14" @input="formatCPF" />
@@ -228,6 +236,7 @@ async function buscarCep() {
 }
 
 const form = ref({
+  tipoCliente: '',
   nome: '', cpf: '', rg: '', estadoCivil: '', conjuge: '', dataAniversario: '',
   email: '', telefone: '',
   logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '', cep: '',
@@ -235,6 +244,12 @@ const form = ref({
   imovelInteresse: '',
   movimentacao: '',
 });
+
+const tiposCliente = [
+  { valor: 'Vendedor',  rotulo: 'Vendedor' },
+  { valor: 'Comprador', rotulo: 'Comprador' },
+  { valor: 'Ambos',     rotulo: 'Ambos (vende e compra)' },
+];
 
 const estadosCivis = ['Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)', 'União Estável'];
 
@@ -268,6 +283,7 @@ function formatCPF(e) {
 function buildPayload(f) {
   return {
     dadosPessoais: {
+      tipoCliente:     f.tipoCliente,
       nome:            f.nome,
       cpf:             f.cpf,
       rg:              f.rg,
@@ -338,6 +354,7 @@ onMounted(async () => {
     const pref = cliente['Preferências']  || {};
     const vin  = cliente['Vínculo']       || {};
 
+    form.value.tipoCliente     = dp['Tipo de Cliente']  || cliente['Tipo de Cliente'] || '';
     form.value.nome            = dp['Nome']             || cliente['Nome'] || '';
     form.value.cpf             = dp['CPF']              || cliente['CPF']  || '';
     form.value.rg              = dp['RG']               || cliente['RG']   || '';

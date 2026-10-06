@@ -1,5 +1,16 @@
 const { appendRow, getRows, getColumnA, updateRowById, deleteRowById, deleteMovimentacoesByRef, CLIENTES_SHEET } = require('../sheets');
 
+// Tipo de cliente aceito na planilha. Qualquer outro valor vira vazio (cadastros antigos não têm tipo).
+const TIPOS_CLIENTE = ['Vendedor', 'Comprador', 'Ambos'];
+function normalizarTipoCliente(v) {
+  const t = String(v ?? '').trim();
+  return TIPOS_CLIENTE.includes(t) ? t : '';
+}
+// Quem aparece ao filtrar por tipo: "Vendedor" inclui também quem é "Ambos" (e o mesmo para "Comprador").
+function tiposQueIncluem(tipo) {
+  return tipo === 'Ambos' ? ['Ambos'] : [tipo, 'Ambos'];
+}
+
 async function generateClienteId() {
   const existingIds = await getColumnA(CLIENTES_SHEET);
   let maxSeq = 0;
@@ -21,7 +32,7 @@ async function createCliente(req, res) {
     // ── Desestrutura grupos do payload ──────────────────────────
     const { dadosPessoais = {}, preferencias = {}, vinculo = {}, movimentacao = '' } = b;
     const { nome = '', cpf = '', rg = '', estadoCivil = '', conjuge = '',
-            dataAniversario = '', email = '', telefone = '', endereco = {} } = dadosPessoais;
+            dataAniversario = '', email = '', telefone = '', endereco = {}, tipoCliente = '' } = dadosPessoais;
     const { logradouro = '', numero = '', complemento = '', bairro = '',
             cidade = '', uf = '', cep = '' } = endereco;
     const { hobbies = '', gostosPessoais = '', bebidaPreferida = '' } = preferencias;
@@ -33,7 +44,7 @@ async function createCliente(req, res) {
     // Endereço concatenado (mantém coluna original intacta)
     const endConcat = [logradouro, numero, complemento, bairro, cidade, uf, cep].filter(Boolean).join(', ');
 
-    // A ordem dos campos DEVE seguir exatamente CLIENTES_HEADERS (23 colunas)
+    // A ordem dos campos DEVE seguir exatamente CLIENTES_HEADERS (24 colunas)
     const row = [
       id,               // 1  ID
       now,              // 2  Data Cadastro
@@ -59,6 +70,7 @@ async function createCliente(req, res) {
       numero,           // 21 Número
       complemento,      // 22 Complemento
       bairro,           // 23 Bairro
+      normalizarTipoCliente(tipoCliente), // 24 Tipo de Cliente
     ];
 
     await appendRow(CLIENTES_SHEET, row);
@@ -74,14 +86,16 @@ async function listClientes(req, res) {
   try {
     const rows = await getRows(CLIENTES_SHEET);
     const q = (req.query.q || '').toLowerCase().trim();
+    const tipo = normalizarTipoCliente(req.query.tipo);
+    const porTipo = tipo ? rows.filter((r) => tiposQueIncluem(tipo).includes(r['Tipo de Cliente'])) : rows;
     const filtered = q
-      ? rows.filter(
+      ? porTipo.filter(
           (r) =>
             (r['ID'] || '').toLowerCase().includes(q) ||
             (r['Nome'] || '').toLowerCase().includes(q) ||
             (r['CPF'] || '').toLowerCase().includes(q)
         )
-      : rows;
+      : porTipo;
 
     const total      = filtered.length;
     const limit      = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
@@ -124,7 +138,7 @@ async function updateCliente(req, res) {
     const b = req.body;
     const { dadosPessoais = {}, preferencias = {}, vinculo = {}, movimentacao = '' } = b;
     const { nome = '', cpf = '', rg = '', estadoCivil = '', conjuge = '',
-            dataAniversario = '', email = '', telefone = '', endereco = {} } = dadosPessoais;
+            dataAniversario = '', email = '', telefone = '', endereco = {}, tipoCliente = '' } = dadosPessoais;
     const { logradouro = '', numero = '', complemento = '', bairro = '',
             cidade = '', uf = '', cep = '' } = endereco;
     const { hobbies = '', gostosPessoais = '', bebidaPreferida = '' } = preferencias;
@@ -133,7 +147,7 @@ async function updateCliente(req, res) {
     // Endereço concatenado (mantém coluna original intacta)
     const endConcat = [logradouro, numero, complemento, bairro, cidade, uf, cep].filter(Boolean).join(', ');
 
-    // A ordem dos campos DEVE seguir exatamente CLIENTES_HEADERS (23 colunas)
+    // A ordem dos campos DEVE seguir exatamente CLIENTES_HEADERS (24 colunas)
     const row = [
       id,                        // 1  ID (preserva original)
       original['Data Cadastro'], // 2  Data Cadastro (preserva original)
@@ -159,6 +173,7 @@ async function updateCliente(req, res) {
       numero,                    // 21 Número
       complemento,               // 22 Complemento
       bairro,                    // 23 Bairro
+      normalizarTipoCliente(tipoCliente), // 24 Tipo de Cliente
     ];
 
     await updateRowById(CLIENTES_SHEET, id, row);
@@ -169,4 +184,4 @@ async function updateCliente(req, res) {
   }
 }
 
-module.exports = { createCliente, listClientes, deleteCliente, updateCliente };
+module.exports = { createCliente, listClientes, deleteCliente, updateCliente, normalizarTipoCliente, tiposQueIncluem };

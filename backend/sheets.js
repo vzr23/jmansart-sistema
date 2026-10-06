@@ -22,6 +22,8 @@ const IMOVEIS_HEADERS = [
   'Bairro Vendedor', 'Cidade Vendedor', 'UF Vendedor', 'CEP Vendedor',
   // Endereço Imóvel detalhado
   'Logradouro Imóvel', 'Número Imóvel', 'Complemento Imóvel', 'Bairro Imóvel',
+  // Vínculo com o cadastro de cliente (vendedor escolhido na busca; só referência, os dados são copiados)
+  'ID Cliente Vendedor',
 ];
 
 const CLIENTES_HEADERS = [
@@ -32,6 +34,8 @@ const CLIENTES_HEADERS = [
   'Imóvel de Interesse', 'Movimentação',
   // Endereço detalhado
   'Logradouro', 'Número', 'Complemento', 'Bairro',
+  // Classificação do cliente: Vendedor, Comprador ou Ambos
+  'Tipo de Cliente',
 ];
 
 const MOVIMENTACOES_HEADERS = [

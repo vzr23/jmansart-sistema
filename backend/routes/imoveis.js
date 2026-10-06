@@ -35,7 +35,7 @@ async function createImovel(req, res) {
     const { tipo = '', subtipos = [] } = tipoImovel;
     const { tipoVendedor = 'PF', nome = '', cpf = '', rg = '', estadoCivil = '', conjuge = '',
             dataAniversario = '', enderecoVendedor = {}, razaoSocial = '', cnpj = '', enderecoEmpresa = '',
-            site = '', email = '', telefone = '' } = vendedor;
+            site = '', email = '', telefone = '', idCliente = '' } = vendedor;
     const { logradouro: lv = '', numero: nv = '', complemento: cv = '', bairro: bv = '', cidade: cdv = '', uf: ufv = '', cep: cepv = '' } = enderecoVendedor;
     const { logradouro: li = '', numero: ni = '', complemento: ci = '', bairro: bi = '',
             cidade: cidadeImovel = '', cidadeAbrev: cidadeAbrevRaw = '', uf: ufImovel = '', cep: cepImovel = '',
@@ -53,7 +53,10 @@ async function createImovel(req, res) {
       : [lv, nv, cv, bv, cdv, ufv, cepv].filter(Boolean).join(', ');
     const endImovel = [li, ni, ci, bi].filter(Boolean).join(', ');
 
-    // A ordem dos campos DEVE seguir exatamente IMOVEIS_HEADERS (39 colunas)
+    // ID do cliente escolhido na busca (só PF e só no formato CLI000); o resto vira vazio
+    const idClienteVendedor = (tipoVendedor === 'PJ' || !/^CLI\d+$/.test(String(idCliente).trim())) ? '' : String(idCliente).trim();
+
+    // A ordem dos campos DEVE seguir exatamente IMOVEIS_HEADERS (40 colunas)
     const row = [
       id,                                          // 1  ID
       now,                                         // 2  Data Cadastro
@@ -95,6 +98,7 @@ async function createImovel(req, res) {
       ni,                                           // 37 Número Imóvel
       ci,                                           // 38 Complemento Imóvel
       bi,                                           // 39 Bairro Imóvel
+      idClienteVendedor,                            // 40 ID Cliente Vendedor (só referência)
     ];
 
     await appendRow(IMOVEIS_SHEET, row);
@@ -170,7 +174,7 @@ async function updateImovel(req, res) {
     const { tipo = '', subtipos = [] } = tipoImovel;
     const { tipoVendedor = 'PF', nome = '', cpf = '', rg = '', estadoCivil = '', conjuge = '',
             dataAniversario = '', enderecoVendedor = {}, razaoSocial = '', cnpj = '', enderecoEmpresa = '',
-            site = '', email = '', telefone = '' } = vendedor;
+            site = '', email = '', telefone = '', idCliente = '' } = vendedor;
     const { logradouro: lv = '', numero: nv = '', complemento: cv = '', bairro: bv = '', cidade: cdv = '', uf: ufv = '', cep: cepv = '' } = enderecoVendedor;
     const { logradouro: li = '', numero: ni = '', complemento: ci = '', bairro: bi = '',
             cidade: cidadeImovel = '', uf: ufImovel = '', cep: cepImovel = '',
@@ -183,7 +187,10 @@ async function updateImovel(req, res) {
       : [lv, nv, cv, bv, cdv, ufv, cepv].filter(Boolean).join(', ');
     const endImovel = [li, ni, ci, bi].filter(Boolean).join(', ');
 
-    // A ordem dos campos DEVE seguir exatamente IMOVEIS_HEADERS (39 colunas)
+    // ID do cliente escolhido na busca (só PF e só no formato CLI000); o resto vira vazio
+    const idClienteVendedor = (tipoVendedor === 'PJ' || !/^CLI\d+$/.test(String(idCliente).trim())) ? '' : String(idCliente).trim();
+
+    // A ordem dos campos DEVE seguir exatamente IMOVEIS_HEADERS (40 colunas)
     const row = [
       id,                                          // 1  ID (preserva original)
       original['Data Cadastro'],                   // 2  Data Cadastro (preserva original)
@@ -225,6 +232,7 @@ async function updateImovel(req, res) {
       ni,                                           // 37 Número Imóvel
       ci,                                           // 38 Complemento Imóvel
       bi,                                           // 39 Bairro Imóvel
+      idClienteVendedor,                            // 40 ID Cliente Vendedor (só referência)
     ];
 
     await updateRowById(IMOVEIS_SHEET, id, row);
