@@ -53,6 +53,49 @@
       </button>
     </div>
 
+    <!-- Filtros -->
+    <div class="flex flex-wrap items-end gap-3 mb-6" data-teste="filtros">
+      <div>
+        <label class="input-label">Status</label>
+        <select v-model="filtros.status" @change="aplicarFiltros" class="input-field text-sm py-2" data-teste="filtro-status">
+          <option value="">Todos</option>
+          <option v-for="st in (activeTab === 'imoveis' ? statusImovelOpcoes : statusClienteOpcoes)" :key="st" :value="st">{{ st }}</option>
+        </select>
+      </div>
+      <div v-if="activeTab === 'imoveis'">
+        <label class="input-label">Tipo</label>
+        <select v-model="filtros.tipo" @change="aplicarFiltros" class="input-field text-sm py-2" data-teste="filtro-tipo">
+          <option value="">Todos</option>
+          <option value="Residencial">Residencial</option>
+          <option value="Comercial">Comercial</option>
+        </select>
+      </div>
+      <div v-else>
+        <label class="input-label">Tipo de cliente</label>
+        <select v-model="filtros.tipo" @change="aplicarFiltros" class="input-field text-sm py-2" data-teste="filtro-tipo">
+          <option value="">Todos</option>
+          <option value="Vendedor">Vendedor</option>
+          <option value="Comprador">Comprador</option>
+          <option value="Ambos">Ambos</option>
+        </select>
+      </div>
+      <div>
+        <label class="input-label">Cidade</label>
+        <input v-model="filtros.cidade" @input="aplicarFiltrosDebounced" class="input-field text-sm py-2 w-40" placeholder="Ex.: Blumenau" data-teste="filtro-cidade" />
+      </div>
+      <template v-if="activeTab === 'imoveis'">
+        <div>
+          <label class="input-label">Valor mín. (R$)</label>
+          <input v-model="filtros.valorMin" @input="soDigitos('valorMin'); aplicarFiltrosDebounced()" class="input-field text-sm py-2 w-32" inputmode="numeric" placeholder="0" data-teste="filtro-valor-min" />
+        </div>
+        <div>
+          <label class="input-label">Valor máx. (R$)</label>
+          <input v-model="filtros.valorMax" @input="soDigitos('valorMax'); aplicarFiltrosDebounced()" class="input-field text-sm py-2 w-32" inputmode="numeric" placeholder="0" data-teste="filtro-valor-max" />
+        </div>
+      </template>
+      <button v-if="temFiltro" type="button" @click="limparFiltros" class="text-xs text-navy-600 hover:underline pb-2.5" data-teste="limpar-filtros">Limpar filtros</button>
+    </div>
+
     <!-- Loading -->
     <div v-if="loading" class="flex items-center justify-center py-20 text-slate-400">
       <svg class="w-6 h-6 animate-spin mr-3" fill="none" viewBox="0 0 24 24">
@@ -78,7 +121,7 @@
         <path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
       </svg>
       <p class="font-semibold">Nenhum registro encontrado</p>
-      <p class="text-sm mt-1">{{ search ? 'Tente outros termos de busca.' : 'Cadastre o primeiro registro.' }}</p>
+      <p class="text-sm mt-1">{{ (search || temFiltro) ? 'Tente outros termos de busca ou limpe os filtros.' : 'Cadastre o primeiro registro.' }}</p>
     </div>
 
     <!-- ── TABELA IMÓVEIS ── -->
@@ -93,6 +136,7 @@
                 <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Vendedor</th>
                 <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Cidade</th>
                 <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Valor</th>
+                <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Status</th>
                 <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Quitado</th>
                 <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Cadastro</th>
                 <th class="px-4 py-3 text-right font-semibold text-slate-600 whitespace-nowrap">Ações</th>
@@ -116,6 +160,13 @@
                   <td class="px-4 py-3 whitespace-nowrap">{{ row['Cidade Imóvel'] || '—' }}</td>
                   <td class="px-4 py-3 whitespace-nowrap text-emerald-700 font-medium">{{ row['Valor'] || '—' }}</td>
                   <td class="px-4 py-3 whitespace-nowrap">
+                    <span class="text-xs font-medium px-2 py-0.5 rounded-full" :class="classeStatus(row['Status Imóvel'])" data-teste="badge-status-imovel">
+                      {{ row['Status Imóvel'] || 'Sem status' }}
+                    </span>
+                    <span v-if="row['Situação Autorização'] === 'vencida'" class="block mt-1 text-[11px] font-semibold text-red-600" data-teste="badge-vencida">Autorização vencida</span>
+                    <span v-else-if="row['Situação Autorização'] === 'vencendo'" class="block mt-1 text-[11px] font-semibold text-amber-600" data-teste="badge-vencendo">Vence em {{ row['Dias para Vencer'] }} {{ row['Dias para Vencer'] === 1 ? 'dia' : 'dias' }}</span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap">
                     <span class="text-xs font-medium px-2 py-0.5 rounded-full"
                       :class="row['Quitado'] === 'Sim'
                         ? 'bg-emerald-50 text-emerald-700'
@@ -125,6 +176,25 @@
                   </td>
                   <td class="px-4 py-3 whitespace-nowrap text-slate-400 text-xs">{{ row['Data Cadastro'] || '—' }}</td>
                   <td class="px-4 py-3 text-right whitespace-nowrap">
+                    <button
+                      v-if="imovelAtivo(row)"
+                      @click.stop="gerarFicha(row['ID'])"
+                      :disabled="fichaGerando === row['ID']"
+                      class="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-md transition mr-1 disabled:opacity-50"
+                      title="Gerar ficha em PDF para o comprador"
+                      data-teste="btn-ficha"
+                    >
+                      {{ fichaGerando === row['ID'] ? '...' : 'Ficha' }}
+                    </button>
+                    <button
+                      v-if="imovelAtivo(row)"
+                      @click.stop="abrirCompativeis('imovel', row['ID'], row['Tipo'] + ' ' + (row['Bairro Imóvel'] || row['Cidade Imóvel'] || ''))"
+                      class="inline-flex items-center gap-1 text-xs font-medium text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded-md transition mr-1"
+                      title="Ver compradores compatíveis"
+                      data-teste="btn-compat-imovel"
+                    >
+                      Compradores
+                    </button>
                     <button
                       @click.stop="abrirMovimentacao(row['ID'], row['Nome / Razão Social'], 'Imóvel')"
                       class="inline-flex items-center gap-1 text-xs font-medium text-navy-600 hover:text-navy-800 bg-navy-50 hover:bg-navy-100 px-2.5 py-1 rounded-md transition mr-1"
@@ -162,9 +232,11 @@
                 </tr>
                 <!-- Expandido -->
                 <tr v-if="expanded === i" class="bg-slate-50/70">
-                  <td colspan="8" class="px-6 py-5">
+                  <td colspan="9" class="px-6 py-5">
                     <div class="grid sm:grid-cols-3 gap-x-8 gap-y-3 text-sm">
                       <detail label="Subtipo" :value="row['Subtipo']" />
+                      <detail label="Área" :value="row['Área (m²)'] ? row['Área (m²)'] + ' m²' : ''" />
+                      <detail label="Autorização (início → vencimento)" :value="row['Data Autorização'] ? row['Data Autorização'] + ' → ' + (row['Vencimento Autorização'] || '—') : ''" />
                       <detail label="Autorização Venda" :value="row['Autorização Venda']" />
                       <detail label="Tipo Vendedor" :value="row['Tipo Vendedor']" />
                       <detail label="CPF / CNPJ" :value="row['CPF / CNPJ']" />
@@ -177,6 +249,15 @@
                       <detail label="Matrícula" :value="row['Matrícula']" />
                       <detail label="Saldo Devedor" :value="row['Saldo Devedor']" />
                       <detail label="Condições Pagamento" :value="row['Condições de Pagamento']" />
+                      <div class="sm:col-span-3">
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Descrição / diferenciais</p>
+                        <p class="text-slate-700 whitespace-pre-wrap">{{ row['Descrição'] || '—' }}</p>
+                      </div>
+                      <div class="sm:col-span-3">
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Pasta de fotos e documentos</p>
+                        <a v-if="linkSeguro(row['Link Pasta Fotos'])" :href="linkSeguro(row['Link Pasta Fotos'])" target="_blank" rel="noopener noreferrer" class="text-navy-600 underline break-all" data-teste="link-fotos-lista">Abrir pasta</a>
+                        <span v-else class="text-slate-700">—</span>
+                      </div>
                       <div class="sm:col-span-3">
                         <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Observações</p>
                         <p class="text-slate-700 whitespace-pre-wrap">{{ row['Observações'] || '—' }}</p>
@@ -206,6 +287,7 @@
                 <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Nome</th>
                 <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">CPF</th>
                 <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Tipo</th>
+                <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Status</th>
                 <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Cidade</th>
                 <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Imóvel de Interesse</th>
                 <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Cadastro</th>
@@ -224,10 +306,22 @@
                     <span v-if="row['Tipo de Cliente']" class="text-xs font-medium text-navy-600 bg-navy-50 px-2 py-0.5 rounded-md">{{ row['Tipo de Cliente'] }}</span>
                     <span v-else class="text-slate-400">—</span>
                   </td>
+                  <td class="px-4 py-3 whitespace-nowrap">
+                    <span class="text-xs font-medium px-2 py-0.5 rounded-full" :class="classeStatusCliente(row['Status Cliente'])" data-teste="badge-status-cliente">{{ row['Status Cliente'] || 'Sem status' }}</span>
+                  </td>
                   <td class="px-4 py-3">{{ row['Cidade'] || '—' }}</td>
                   <td class="px-4 py-3 font-mono text-navy-600 font-medium">{{ row['Imóvel de Interesse'] || '—' }}</td>
                   <td class="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{{ row['Data Cadastro'] || '—' }}</td>
                   <td class="px-4 py-3 text-right whitespace-nowrap">
+                    <button
+                      v-if="ehComprador(row) && clienteAtivo(row)"
+                      @click.stop="abrirCompativeis('cliente', row['ID'], row['Nome'])"
+                      class="inline-flex items-center gap-1 text-xs font-medium text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded-md transition mr-1"
+                      title="Ver imóveis compatíveis"
+                      data-teste="btn-compat-cliente"
+                    >
+                      Imóveis
+                    </button>
                     <button
                       @click.stop="abrirMovimentacao(row['ID'], row['Nome'], 'Cliente')"
                       class="inline-flex items-center gap-1 text-xs font-medium text-navy-600 hover:text-navy-800 bg-navy-50 hover:bg-navy-100 px-2.5 py-1 rounded-md transition mr-1"
@@ -265,8 +359,9 @@
                 </tr>
                 <!-- Expandido -->
                 <tr v-if="expanded === i" class="bg-slate-50/70">
-                  <td colspan="8" class="px-6 py-5">
+                  <td colspan="9" class="px-6 py-5">
                     <div class="grid sm:grid-cols-3 gap-x-8 gap-y-3 text-sm">
+                      <detail v-if="row['Tipo Procurado'] || row['Cidade Procurada'] || row['Valor Mínimo'] || row['Valor Máximo']" label="Procura" :value="resumoBusca(row)" />
                       <detail label="RG" :value="row['RG']" />
                       <detail label="Estado Civil" :value="row['Estado Civil']" />
                       <detail label="Cônjuge" :value="row['Cônjuge']" />
@@ -422,6 +517,43 @@
       </transition>
     </teleport>
 
+    <!-- MODAL DE COMPATÍVEIS -->
+    <teleport to="body">
+      <transition name="modal">
+        <div v-if="compat" class="fixed inset-0 z-50 flex items-center justify-center p-4" data-teste="modal-compat">
+          <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="compat = null"></div>
+          <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[85vh]">
+            <div class="flex items-start justify-between p-6 border-b border-slate-100">
+              <div>
+                <p class="font-bold text-navy-700">{{ compat.origem === 'imovel' ? 'Compradores compatíveis' : 'Imóveis compatíveis' }}</p>
+                <p class="text-xs text-slate-500 mt-0.5"><span class="font-mono">{{ compat.id }}</span> · {{ compat.nome }}</p>
+              </div>
+              <button type="button" @click="compat = null" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 ml-4">✕</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6">
+              <p v-if="compat.carregando" class="text-sm text-slate-400 text-center py-6">Procurando...</p>
+              <p v-else-if="compat.erro" class="text-sm text-red-500 text-center py-6">{{ compat.erro }}</p>
+              <p v-else-if="compat.itens.length === 0" class="text-sm text-slate-400 text-center py-6" data-teste="compat-vazio">Nenhum resultado compatível por enquanto.</p>
+              <ul v-else class="space-y-3">
+                <li v-for="it in compat.itens" :key="it.id" class="border border-slate-100 rounded-xl p-4" data-teste="compat-item">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="font-mono text-sm font-semibold text-navy-700">{{ it.id }}</span>
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                      :class="it.nivel === 'combina' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'">
+                      {{ it.nivel === 'combina' ? 'Combina' : 'Quase combina' }}
+                    </span>
+                  </div>
+                  <p v-if="compat.origem === 'imovel'" class="text-sm text-slate-700 mt-1">{{ it.nome }}<span v-if="it.telefone" class="text-slate-400"> · {{ it.telefone }}</span></p>
+                  <p v-else class="text-sm text-slate-700 mt-1">{{ [it.subtipo || it.tipo, it.bairro, it.cidade].filter(Boolean).join(' · ') }}<span v-if="it.valor" class="text-emerald-700 font-medium"> · {{ it.valor }}</span></p>
+                  <p v-if="it.motivo" class="text-xs text-slate-500 mt-1">{{ it.motivo }}</p>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </teleport>
+
     <!-- ═══════════════════════════════════════════════════════
          MODAL DE MOVIMENTAÇÃO
     ══════════════════════════════════════════════════════════ -->
@@ -548,9 +680,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { listarImoveis, listarClientes, criarMovimentacao, listarMovimentacoes, deletarImovel, deletarCliente } from '../api/index.js';
+import { listarImoveis, listarClientes, criarMovimentacao, listarMovimentacoes, deletarImovel, deletarCliente, gerarFichaPdf, imoveisCompativeis, clientesCompativeis, lerErroApi } from '../api/index.js';
+import { compartilharOuBaixar } from '../utils/compartilharPdf.js';
 import { useToast } from '../composables/useToast.js';
 
 const router = useRouter();
@@ -581,6 +714,80 @@ const movHistorico = ref([]);
 const movLoading = ref(false);
 const movSaving  = ref(false);
 
+// ── Filtros (um conjunto por aba) ──────────
+const statusImovelOpcoes = ['Captação', 'Anunciado', 'Em negociação', 'Vendido', 'Cancelado'];
+const statusClienteOpcoes = ['Novo', 'Em atendimento', 'Negociando', 'Fechado', 'Inativo'];
+const filtrosPorAba = ref({
+  imoveis:  { status: '', tipo: '', cidade: '', valorMin: '', valorMax: '' },
+  clientes: { status: '', tipo: '', cidade: '' },
+});
+const filtros = computed(() => filtrosPorAba.value[activeTab.value]);
+const temFiltro = computed(() => Object.values(filtros.value).some((v) => v !== ''));
+function soDigitos(campo) { filtros.value[campo] = String(filtros.value[campo]).replace(/\D/g, ''); }
+function aplicarFiltros() { page.value = 1; buscar(); }
+let filtroTimer = null;
+function aplicarFiltrosDebounced() { clearTimeout(filtroTimer); filtroTimer = setTimeout(aplicarFiltros, 350); }
+function limparFiltros() {
+  for (const k of Object.keys(filtros.value)) filtros.value[k] = '';
+  aplicarFiltros();
+}
+
+// ── Status / regras de exibição ─────────────
+const imovelAtivo = (r) => !['Vendido', 'Cancelado'].includes(r['Status Imóvel']);
+const clienteAtivo = (r) => !['Fechado', 'Inativo'].includes(r['Status Cliente']);
+const ehComprador = (r) => ['Comprador', 'Ambos'].includes(r['Tipo de Cliente']);
+const CLASSES_STATUS_IMOVEL = {
+  'Captação': 'bg-slate-100 text-slate-600', 'Anunciado': 'bg-blue-50 text-blue-700', 'Em negociação': 'bg-amber-50 text-amber-700',
+  'Vendido': 'bg-emerald-50 text-emerald-700', 'Cancelado': 'bg-red-50 text-red-600',
+};
+const CLASSES_STATUS_CLIENTE = {
+  'Novo': 'bg-slate-100 text-slate-600', 'Em atendimento': 'bg-blue-50 text-blue-700', 'Negociando': 'bg-amber-50 text-amber-700',
+  'Fechado': 'bg-emerald-50 text-emerald-700', 'Inativo': 'bg-slate-100 text-slate-400',
+};
+const classeStatus = (st) => CLASSES_STATUS_IMOVEL[st] || 'bg-slate-50 text-slate-400';
+const classeStatusCliente = (st) => CLASSES_STATUS_CLIENTE[st] || 'bg-slate-50 text-slate-400';
+// Só links http(s) viram <a>; qualquer outra coisa (javascript:, data:...) é ignorada.
+function linkSeguro(v) {
+  const s = String(v || '').trim();
+  return /^https?:\/\/\S+$/i.test(s) ? s : '';
+}
+function resumoBusca(r) {
+  const faixa = [r['Valor Mínimo'], r['Valor Máximo']].filter(Boolean).join(' a ');
+  return [r['Tipo Procurado'], r['Subtipos Procurados'], r['Cidade Procurada'], r['Bairros Procurados'], faixa].filter(Boolean).join(' · ');
+}
+
+// ── Ficha em PDF ────────────────────────────
+const fichaGerando = ref('');
+async function gerarFicha(id) {
+  if (fichaGerando.value) return;
+  fichaGerando.value = id;
+  try {
+    const { data } = await gerarFichaPdf(id);
+    const r = await compartilharOuBaixar(data, `ficha-${id}.pdf`, `Ficha do imóvel ${id}`);
+    if (r === 'baixado') success('Ficha baixada.');
+  } catch (err) {
+    const e = await lerErroApi(err);
+    error(e.mensagem);
+  } finally {
+    fichaGerando.value = '';
+  }
+}
+
+// ── Compatíveis ─────────────────────────────
+const compat = ref(null);
+async function abrirCompativeis(origem, id, nome) {
+  compat.value = { origem, id, nome: String(nome || '').trim(), itens: [], carregando: true, erro: '' };
+  const atual = compat.value;
+  try {
+    const { data } = origem === 'imovel' ? await clientesCompativeis(id) : await imoveisCompativeis(id);
+    atual.itens = data.data || [];
+  } catch (err) {
+    atual.erro = (await lerErroApi(err)).mensagem;
+  } finally {
+    atual.carregando = false;
+  }
+}
+
 const tabs = [
   { key: 'imoveis',  label: 'Imóveis'  },
   { key: 'clientes', label: 'Clientes' },
@@ -609,12 +816,13 @@ async function buscar() {
   expanded.value = null;
   try {
     if (activeTab.value === 'imoveis') {
-      const { data } = await listarImoveis(search.value, page.value, PAGE_SIZE);
+      const { data } = await listarImoveis(search.value, page.value, PAGE_SIZE, filtrosPorAba.value.imoveis);
       rows.value        = data.data;
       totalImoveis.value = data.total;
       totalPages.value   = data.totalPages;
     } else {
-      const { data } = await listarClientes(search.value, page.value, PAGE_SIZE);
+      const { tipo, ...outros } = filtrosPorAba.value.clientes;
+      const { data } = await listarClientes(search.value, page.value, PAGE_SIZE, tipo, outros);
       rows.value         = data.data;
       totalClientes.value = data.total;
       totalPages.value    = data.totalPages;

@@ -1,5 +1,6 @@
 const { appendRow, getRows, getColumnA, updateRowById, deleteRowById, deleteMovimentacoesByRef, IMOVEIS_SHEET } = require('../sheets');
 const { getCityAbbrev } = require('../utils/cities');
+const { camposNovosImovel, ErroValidacao, filtrarImoveis, situacaoAutorizacao, hojeSP } = require('../utils/crm');
 
 // ─────────────────────────────────────────
 // Geração de ID
@@ -56,7 +57,8 @@ async function createImovel(req, res) {
     // ID do cliente escolhido na busca (só PF e só no formato CLI000); o resto vira vazio
     const idClienteVendedor = (tipoVendedor === 'PJ' || !/^CLI\d+$/.test(String(idCliente).trim())) ? '' : String(idCliente).trim();
 
-    // A ordem dos campos DEVE seguir exatamente IMOVEIS_HEADERS (40 colunas)
+    // A ordem dos campos DEVE seguir exatamente IMOVEIS_HEADERS (46 colunas)
+    const novos = camposNovosImovel(b);
     const row = [
       id,                                          // 1  ID
       now,                                         // 2  Data Cadastro
@@ -99,11 +101,13 @@ async function createImovel(req, res) {
       ci,                                           // 38 Complemento Imóvel
       bi,                                           // 39 Bairro Imóvel
       idClienteVendedor,                            // 40 ID Cliente Vendedor (só referência)
+      ...novos,                                     // 41-46 Status, Data/Prazo Autorização, Área, Descrição, Link Fotos
     ];
 
     await appendRow(IMOVEIS_SHEET, row);
     res.status(201).json({ success: true, id });
   } catch (err) {
+    if (err instanceof ErroValidacao) return res.status(400).json({ error: err.message });
     console.error('[POST /imovel]', err);
     res.status(500).json({ error: err.message });
   }
@@ -112,7 +116,11 @@ async function createImovel(req, res) {
 // GET /imoveis
 async function listImoveis(req, res) {
   try {
-    const rows = await getRows(IMOVEIS_SHEET);
+    const todas = await getRows(IMOVEIS_SHEET);
+    const rows = filtrarImoveis(todas, {
+      status: req.query.status, tipo: req.query.tipo, cidade: req.query.cidade,
+      valorMin: req.query.valorMin, valorMax: req.query.valorMax,
+    });
     const q = (req.query.q || '').toLowerCase().trim();
     const filtered = q
       ? rows.filter(
@@ -128,7 +136,14 @@ async function listImoveis(req, res) {
     const limit      = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
     const page       = Math.max(1, parseInt(req.query.page)  || 1);
     const start      = (page - 1) * limit;
-    const data       = filtered.slice(start, start + limit);
+    // Acrescenta (só na resposta, não na planilha) o vencimento da autorização
+    const hoje = hojeSP();
+    const data = filtered.slice(start, start + limit).map((r) => {
+      const sit = situacaoAutorizacao(r, hoje);
+      return sit
+        ? { ...r, 'Vencimento Autorização': sit.vencimento, 'Dias para Vencer': sit.diasRestantes, 'Situação Autorização': sit.estado }
+        : r;
+    });
     const totalPages = Math.ceil(total / limit) || 1;
 
     res.json({ data, total, page, totalPages });
@@ -190,7 +205,8 @@ async function updateImovel(req, res) {
     // ID do cliente escolhido na busca (só PF e só no formato CLI000); o resto vira vazio
     const idClienteVendedor = (tipoVendedor === 'PJ' || !/^CLI\d+$/.test(String(idCliente).trim())) ? '' : String(idCliente).trim();
 
-    // A ordem dos campos DEVE seguir exatamente IMOVEIS_HEADERS (40 colunas)
+    // A ordem dos campos DEVE seguir exatamente IMOVEIS_HEADERS (46 colunas)
+    const novos = camposNovosImovel(b, original);
     const row = [
       id,                                          // 1  ID (preserva original)
       original['Data Cadastro'],                   // 2  Data Cadastro (preserva original)
@@ -233,11 +249,13 @@ async function updateImovel(req, res) {
       ci,                                           // 38 Complemento Imóvel
       bi,                                           // 39 Bairro Imóvel
       idClienteVendedor,                            // 40 ID Cliente Vendedor (só referência)
+      ...novos,                                     // 41-46 Status, Data/Prazo Autorização, Área, Descrição, Link Fotos
     ];
 
     await updateRowById(IMOVEIS_SHEET, id, row);
     res.json({ success: true, id });
   } catch (err) {
+    if (err instanceof ErroValidacao) return res.status(400).json({ error: err.message });
     console.error('[PUT /imovel]', err);
     res.status(err.message.includes('não encontrado') ? 404 : 500).json({ error: err.message });
   }

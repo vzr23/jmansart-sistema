@@ -76,7 +76,11 @@ function criarRotasContratos({
     if (!ID_VALIDO.test(id)) return res.status(400).json({ error: 'ID do imóvel inválido' });
     const row = await buscarImovel(id);
     if (!row) return res.status(404).json({ error: 'Imóvel não encontrado' });
-    res.json({ ...mapearImovelParaContrato(row), padroes: { ...DEFAULTS, exclusividade: 'nao' } });
+    const dados = mapearImovelParaContrato(row);
+    const prazo = Number.parseInt(dados.prazo_dias, 10);
+    const padroes = { ...DEFAULTS, exclusividade: 'nao' };
+    if (prazo > 0) padroes.prazo_dias = prazo; // prazo combinado no cadastro do imóvel
+    res.json({ ...dados, padroes });
   }));
 
   // POST /contratos/autorizacao-venda/previa — valida e devolve os valores por extenso e os avisos (não gera PDF)

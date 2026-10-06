@@ -92,7 +92,9 @@ function mapearImovelParaContrato(row) {
       bairro_imovel: t(row['Bairro Imóvel']) || imov.bairro || '',
       municipio_imovel: t(row['Cidade Imóvel']),
       uf_imovel: t(row['UF Imóvel']),
+      area_m2: t(row['Área (m²)']),
     },
+    prazo_dias: t(row['Prazo Autorização (dias)']),
     valor: t(row['Valor']),
     avisos,
   };

@@ -13,11 +13,12 @@ const { parseOrigens } = require('./config/env');
 const authMiddleware = require('./middleware/auth');
 const { criarAuth } = require('./routes/auth');
 const { criarRotasContratos } = require('./routes/contratos');
+const { criarRotasCrm } = require('./routes/crm');
 const { createImovel, listImoveis, getCidadeSigla, deleteImovel, updateImovel } = require('./routes/imoveis');
 const { createCliente, listClientes, deleteCliente, updateCliente } = require('./routes/clientes');
 const { createMovimentacao, listMovimentacoes } = require('./routes/movimentacoes');
 
-function criarApp({ corsOrigin, trustProxyHops = 1, limites = SEG, authDeps = {}, contratosDeps = {} } = {}) {
+function criarApp({ corsOrigin, trustProxyHops = 1, limites = SEG, authDeps = {}, contratosDeps = {}, crmDeps = {} } = {}) {
   const origens = parseOrigens(corsOrigin);
   if (origens.length === 0) {
     throw new Error('CORS_ORIGIN é obrigatório: informe a URL exata do frontend (o servidor não libera "*" por padrão)');
@@ -72,6 +73,9 @@ function criarApp({ corsOrigin, trustProxyHops = 1, limites = SEG, authDeps = {}
   app.get('/clientes', listClientes);
   app.put('/cliente/:id', updateCliente);
   app.delete('/cliente/:id', deleteCliente);
+
+  // ── CRM: alertas, compatibilidade e ficha em PDF ──
+  app.use(criarRotasCrm({ limites, ...crmDeps }));
 
   // ── Movimentações ─────────────────────────
   app.post('/movimentacao', createMovimentacao);

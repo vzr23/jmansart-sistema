@@ -21,11 +21,11 @@ function resposta() {
 }
 
 test('colunas novas ficam no fim das abas (o que já existe não muda de lugar)', () => {
-  assert.equal(sheets.CLIENTES_HEADERS.length, 24);
-  assert.equal(sheets.CLIENTES_HEADERS.at(-1), 'Tipo de Cliente');
+  assert.equal(sheets.CLIENTES_HEADERS.length, 31);
+  assert.equal(sheets.CLIENTES_HEADERS[23], 'Tipo de Cliente');
   assert.equal(sheets.CLIENTES_HEADERS[22], 'Bairro');
-  assert.equal(sheets.IMOVEIS_HEADERS.length, 40);
-  assert.equal(sheets.IMOVEIS_HEADERS.at(-1), 'ID Cliente Vendedor');
+  assert.equal(sheets.IMOVEIS_HEADERS.length, 46);
+  assert.equal(sheets.IMOVEIS_HEADERS[39], 'ID Cliente Vendedor');
   assert.equal(sheets.IMOVEIS_HEADERS[38], 'Bairro Imóvel');
 });
 
@@ -49,12 +49,12 @@ test('createCliente grava o tipo na última coluna e a linha tem uma célula por
   const { aba, linha } = gravadas[0];
   assert.equal(aba, sheets.CLIENTES_SHEET);
   assert.equal(linha.length, sheets.CLIENTES_HEADERS.length);
-  assert.equal(linha.at(-1), 'Ambos');
+  assert.equal(linha[23], 'Ambos');
   assert.equal(linha[2], 'Fulano Teste');
 
   gravadas.length = 0;
   await createCliente({ body: { dadosPessoais: { nome: 'Sicrano Teste', tipoCliente: 'qualquer coisa' } } }, resposta());
-  assert.equal(gravadas[0].linha.at(-1), '', 'valor inválido vira vazio');
+  assert.equal(gravadas[0].linha[23], '', 'valor inválido vira vazio');
 });
 
 test('listClientes?tipo=Vendedor traz Vendedor e Ambos; sem tipo traz todos; a busca por nome continua valendo', async () => {
@@ -80,13 +80,13 @@ test('createImovel guarda o ID do cliente só para PF e só no formato CLI000', 
   gravadas.length = 0;
   await createImovel(corpo({ tipoVendedor: 'PF', nome: 'Ana Teste', idCliente: 'CLI007' }), resposta());
   assert.equal(gravadas[0].linha.length, sheets.IMOVEIS_HEADERS.length);
-  assert.equal(gravadas[0].linha.at(-1), 'CLI007');
+  assert.equal(gravadas[0].linha[39], 'CLI007');
 
   gravadas.length = 0;
   await createImovel(corpo({ tipoVendedor: 'PJ', razaoSocial: 'Empresa Teste', idCliente: 'CLI007' }), resposta());
-  assert.equal(gravadas[0].linha.at(-1), '', 'vendedor PJ não guarda vínculo');
+  assert.equal(gravadas[0].linha[39], '', 'vendedor PJ não guarda vínculo');
 
   gravadas.length = 0;
   await createImovel(corpo({ tipoVendedor: 'PF', nome: 'Ana Teste', idCliente: '=HYPERLINK("x")' }), resposta());
-  assert.equal(gravadas[0].linha.at(-1), '', 'qualquer coisa fora do formato CLI000 é descartada');
+  assert.equal(gravadas[0].linha[39], '', 'qualquer coisa fora do formato CLI000 é descartada');
 });

@@ -84,6 +84,28 @@
             {{ op }}
           </label>
         </div>
+
+        <!-- Prazo da autorização (alimenta o alerta de vencimento na Home) -->
+        <transition name="fade">
+          <div v-if="form.autorizacaoVenda === 'Sim'" class="grid sm:grid-cols-2 gap-4 mt-4" data-teste="bloco-prazo">
+            <div>
+              <label class="input-label">Data da autorização</label>
+              <input v-model="form.dataAutorizacao" type="date" class="input-field" />
+            </div>
+            <div>
+              <label class="input-label">Prazo (dias)</label>
+              <input v-model="form.prazoDias" class="input-field" inputmode="numeric" maxlength="4" placeholder="120" @input="form.prazoDias = form.prazoDias.replace(/\D/g, '')" />
+              <p v-if="vencimentoPrevisto" class="text-xs text-slate-500 mt-1">Vence em {{ vencimentoPrevisto }}.</p>
+            </div>
+          </div>
+        </transition>
+
+        <div class="mt-5">
+          <label class="input-label">Status do imóvel</label>
+          <select v-model="form.statusImovel" class="input-field sm:max-w-xs" data-teste="status-imovel">
+            <option v-for="st in statusImovelOpcoes" :key="st" :value="st">{{ st }}</option>
+          </select>
+        </div>
       </div>
 
       <!-- ───── 3. Dados do Vendedor ───── -->
@@ -118,7 +140,16 @@
           <div v-if="form.tipoVendedor === 'PF'" class="space-y-5">
             <!-- Busca de vendedor já cadastrado como cliente -->
             <div class="relative" data-teste="busca-vendedor">
-              <label class="input-label">Buscar vendedor cadastrado</label>
+              <div class="flex items-center justify-between">
+                <label class="input-label">Buscar vendedor cadastrado</label>
+                <button
+                  v-if="vendedorTemDados"
+                  type="button"
+                  class="text-xs text-slate-500 hover:text-red-600 underline mb-1.5 whitespace-nowrap shrink-0 ml-3"
+                  data-teste="limpar-vendedor"
+                  @click="limparVendedor"
+                >Limpar dados</button>
+              </div>
               <input
                 v-model="buscaVendedor"
                 @input="aoDigitarBuscaVendedor"
@@ -149,9 +180,8 @@
                 </li>
               </ul>
               <p class="text-xs text-slate-400 mt-1">Só aparecem clientes marcados como Vendedor ou Ambos. Os dados são copiados para o imóvel e você pode ajustar depois.</p>
-              <div v-if="form.idCliente" class="mt-2 inline-flex items-center gap-2 text-xs text-navy-600 bg-navy-50 px-2.5 py-1 rounded-md">
-                <span>Dados copiados do cliente <span class="font-mono font-semibold">{{ form.idCliente }}</span></span>
-                <button type="button" class="text-navy-400 hover:text-navy-700 underline" @click="form.idCliente = ''">Desvincular</button>
+              <div v-if="form.idCliente" class="mt-2 inline-flex items-center text-xs text-navy-600 bg-navy-50 px-2.5 py-1 rounded-md">
+                Dados copiados do cliente <span class="font-mono font-semibold ml-1">{{ form.idCliente }}</span>
               </div>
             </div>
             <div class="grid sm:grid-cols-2 gap-4">
@@ -397,6 +427,23 @@
         <div class="mt-4">
           <label class="input-label">Observações gerais</label>
           <textarea v-model="form.observacoes" class="input-field" rows="3" placeholder="Observações sobre o imóvel..."></textarea>
+          <p class="text-xs text-slate-400 mt-1">Uso interno: não vai para a ficha do comprador.</p>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label class="input-label">Área (m²)</label>
+            <input v-model="form.areaM2" class="input-field" inputmode="decimal" maxlength="12" placeholder="Ex.: 85,5" data-teste="area" />
+          </div>
+          <div>
+            <label class="input-label">Link da pasta de fotos e documentos</label>
+            <input v-model="form.linkFotos" class="input-field" type="url" maxlength="500" placeholder="https://drive.google.com/..." data-teste="link-fotos" />
+          </div>
+        </div>
+        <div class="mt-4">
+          <label class="input-label">Descrição / diferenciais</label>
+          <textarea v-model="form.descricao" class="input-field" rows="3" maxlength="1500" placeholder="Ex.: vista livre, 2 vagas, andar alto..." data-teste="descricao"></textarea>
+          <p class="text-xs text-slate-400 mt-1">Aparece na ficha enviada ao comprador: não coloque dados do vendedor.</p>
         </div>
       </div>
 
@@ -464,7 +511,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { criarImovel, atualizarImovel, buscarSigla, listarImoveis, listarClientes } from '../api/index.js';
 import { useToast } from '../composables/useToast.js';
 import { useRouter, useRoute } from 'vue-router';
@@ -529,6 +576,7 @@ const form = ref({
   subtipos: [],
   // Seção 2
   autorizacaoVenda: '',
+  dataAutorizacao: '', prazoDias: '', statusImovel: 'Captação',
   // Seção 3
   tipoVendedor: 'PF',
   // PF
@@ -544,6 +592,7 @@ const form = ref({
   logradouroImovel: '', numeroImovel: '', complementoImovel: '',
   bairroImovel: '', cidadeImovel: '', cidadeAbrev: '', ufImovel: '', cepImovel: '',
   inscricaoIptu: '', matricula: '', quitado: '', saldoDevedor: '', observacoes: '',
+  areaM2: '', descricao: '', linkFotos: '',
   // Seção 5
   valor: '', condicoesPagamento: '',
   // Seção 6
@@ -600,10 +649,43 @@ async function sugerirSigla() {
   } catch { /* silencioso */ }
 }
 
+const statusImovelOpcoes = ['Captação', 'Anunciado', 'Em negociação', 'Vendido', 'Cancelado'];
+
+// A planilha guarda dd/mm/aaaa; o campo de data usa aaaa-mm-dd.
+function dataParaInput(v) {
+  const s = String(v || '').trim();
+  const br = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (br) return `${br[3]}-${br[2].padStart(2, '0')}-${br[1].padStart(2, '0')}`;
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : '';
+}
+const hojeISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+// Ao marcar "Autorização = Sim" num cadastro sem data, sugere hoje e 120 dias (dá para mudar).
+watch(() => form.value.autorizacaoVenda, (v) => {
+  if (v === 'Sim') {
+    if (!form.value.dataAutorizacao) form.value.dataAutorizacao = hojeISO();
+    if (!form.value.prazoDias) form.value.prazoDias = '120';
+  }
+});
+const vencimentoPrevisto = computed(() => {
+  const m = form.value.dataAutorizacao.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const dias = parseInt(form.value.prazoDias, 10) || 0;
+  if (!m || dias < 1) return '';
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3] + dias));
+  return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${d.getUTCFullYear()}`;
+});
+
 function buildPayload(f) {
   return {
     tipoImovel: { tipo: f.tipo, subtipos: f.subtipos },
     autorizacaoVenda: f.autorizacaoVenda,
+    gestao: {
+      status: f.statusImovel,
+      dataAutorizacao: f.autorizacaoVenda === 'Sim' ? f.dataAutorizacao : '',
+      prazoDias: f.autorizacaoVenda === 'Sim' ? f.prazoDias : '',
+    },
     vendedor: {
       tipoVendedor:    f.tipoVendedor,
       idCliente:       f.tipoVendedor === 'PF' ? f.idCliente : '',
@@ -643,6 +725,9 @@ function buildPayload(f) {
       quitado:       f.quitado,
       saldoDevedor:  f.saldoDevedor,
       observacoes:   f.observacoes,
+      area:          f.areaM2,
+      descricao:     f.descricao,
+      linkFotos:     f.linkFotos.trim(),
     },
     condicoesComerciais: {
       valor:              f.valor,
@@ -750,8 +835,41 @@ function usarCliente(c) {
   f.ufVendedor          = end.uf     || c['UF']     || '';
   f.cepVendedor         = end.cep    || c['CEP']    || '';
   f.idCliente           = c['ID'] || '';
+  vinculoOrigem = { nome: f.nomeVendedor, cpf: f.cpf };
   buscaVendedor.value = '';
   listaVendedorAberta.value = false;
+}
+
+// O vínculo com o cliente vale enquanto o vendedor for a mesma pessoa: se o nome ou o CPF mudarem,
+// o ID some sozinho (telefone, e-mail e endereço podem ser ajustados sem perder o vínculo).
+let vinculoOrigem = null;
+watch([() => form.value.nomeVendedor, () => form.value.cpf], ([nome, cpf]) => {
+  if (form.value.idCliente && vinculoOrigem && (nome !== vinculoOrigem.nome || cpf !== vinculoOrigem.cpf)) {
+    form.value.idCliente = '';
+    vinculoOrigem = null;
+  }
+});
+
+const vendedorTemDados = computed(() => {
+  const f = form.value;
+  return !!(f.idCliente || f.nomeVendedor || f.cpf || f.rg || f.estadoCivil || f.conjuge || f.dataAniversario
+    || f.email || f.telefone || f.logradouroVendedor || f.numeroVendedor || f.complementoVendedor
+    || f.bairroVendedor || f.cepVendedor || f.cidadeVendedor || f.ufVendedor);
+});
+
+// Zera todos os campos do vendedor (PF) e o vínculo, para recomeçar (ex.: escolheu o cliente errado).
+function limparVendedor() {
+  const f = form.value;
+  Object.assign(f, {
+    idCliente: '', nomeVendedor: '', cpf: '', rg: '', estadoCivil: '', conjuge: '', dataAniversario: '',
+    email: '', telefone: '',
+    logradouroVendedor: '', numeroVendedor: '', complementoVendedor: '', bairroVendedor: '',
+    cepVendedor: '', cidadeVendedor: '', ufVendedor: '',
+  });
+  vinculoOrigem = null;
+  buscaVendedor.value = '';
+  listaVendedorAberta.value = false;
+  cepVendedorErro.value = '';
 }
 
 onBeforeUnmount(() => clearTimeout(timerBuscaVendedor));
@@ -772,6 +890,12 @@ onMounted(async () => {
     form.value.tipo            = row['Tipo'] || '';
     form.value.subtipos        = row['Subtipo'] ? row['Subtipo'].split(', ').filter(Boolean) : [];
     form.value.autorizacaoVenda = row['Autorização Venda'] || '';
+    form.value.statusImovel    = row['Status Imóvel'] || 'Captação';
+    form.value.dataAutorizacao = dataParaInput(row['Data Autorização']);
+    form.value.prazoDias       = row['Prazo Autorização (dias)'] || '';
+    form.value.areaM2          = row['Área (m²)'] || '';
+    form.value.descricao       = row['Descrição'] || '';
+    form.value.linkFotos       = row['Link Pasta Fotos'] || '';
     form.value.tipoVendedor    = row['Tipo Vendedor'] || 'PF';
 
     if (isPJ) {
@@ -784,6 +908,7 @@ onMounted(async () => {
       form.value.cpf                = row['CPF / CNPJ'] || '';
       form.value.rg                 = row['RG'] || '';
       form.value.idCliente          = row['ID Cliente Vendedor'] || '';
+      vinculoOrigem = form.value.idCliente ? { nome: form.value.nomeVendedor, cpf: form.value.cpf } : null;
       form.value.estadoCivil        = row['Estado Civil'] || '';
       form.value.conjuge            = row['Cônjuge'] || '';
       form.value.dataAniversario    = row['Data Aniversário'] || '';
@@ -847,6 +972,11 @@ async function submit() {
   const f = form.value;
   if (!editMode.value && !f.cidadeAbrev) {
     error('Informe a sigla da cidade para geração do ID.');
+    return;
+  }
+  const link = f.linkFotos.trim();
+  if (link && !/^https?:\/\/\S+$/i.test(link)) {
+    error('O link das fotos deve começar com http:// ou https://');
     return;
   }
   loading.value = true;

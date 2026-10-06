@@ -15,6 +15,33 @@
       <p class="text-slate-500 text-base">Sistema de cadastro de imóveis e clientes</p>
     </div>
 
+    <!-- Alertas: autorizações de venda vencendo / vencidas -->
+    <div v-if="temAlerta" class="card p-5 mb-10 border-amber-200 bg-amber-50/40" data-teste="painel-alertas">
+      <div class="flex items-center gap-2 mb-3">
+        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+        </svg>
+        <h2 class="font-semibold text-navy-700">Autorizações de venda para renovar</h2>
+      </div>
+      <ul class="divide-y divide-amber-100">
+        <li v-for="it in itens" :key="it.id" class="py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1" data-teste="alerta-item">
+          <span class="font-mono text-sm font-semibold text-navy-700">{{ it.id }}</span>
+          <span class="text-sm text-slate-600 flex-1 min-w-[10rem]">
+            {{ [it.subtipo || it.tipo, it.bairro, it.cidade].filter(Boolean).join(' · ') }}
+            <span v-if="it.vendedor" class="text-slate-400"> — {{ it.vendedor }}</span>
+          </span>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+            :class="it.diasRestantes < 0 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'">
+            {{ textoPrazo(it) }}
+          </span>
+          <router-link :to="{ path: '/imovel', query: { editar: it.id } }" class="text-xs font-semibold text-navy-600 hover:underline">Abrir</router-link>
+        </li>
+      </ul>
+      <p v-if="alertas.totalVencidas > alertas.vencidas.length" class="text-xs text-slate-500 mt-2">
+        Mostrando as {{ alertas.vencidas.length }} vencidas mais recentes de {{ alertas.totalVencidas }}.
+      </p>
+    </div>
+
     <!-- Cards de ação -->
     <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
       <router-link
@@ -97,5 +124,31 @@
 </template>
 
 <script setup>
+import { ref, computed, onMounted } from 'vue';
 import logoUrl from '@/assets/logo.png';
+import { buscarAlertasAutorizacao } from '../api/index.js';
+
+const alertas = ref({ vencendo: [], vencidas: [], totalVencidas: 0 });
+const itens = computed(() => [...alertas.value.vencidas, ...alertas.value.vencendo]
+  .sort((a, b) => a.diasRestantes - b.diasRestantes));
+const temAlerta = computed(() => itens.value.length > 0);
+
+function textoPrazo(it) {
+  const d = it.diasRestantes;
+  if (d < 0) return `Vencida há ${-d} ${d === -1 ? 'dia' : 'dias'}`;
+  if (d === 0) return 'Vence hoje';
+  return `Vence em ${d} ${d === 1 ? 'dia' : 'dias'}`;
+}
+
+// Falha silenciosa: o aviso é um extra, a Home continua funcionando sem ele.
+onMounted(async () => {
+  try {
+    const { data } = await buscarAlertasAutorizacao(15);
+    alertas.value = {
+      vencendo: Array.isArray(data.vencendo) ? data.vencendo : [],
+      vencidas: Array.isArray(data.vencidas) ? data.vencidas : [],
+      totalVencidas: Number(data.totalVencidas) || 0,
+    };
+  } catch { /* sem aviso */ }
+});
 </script>

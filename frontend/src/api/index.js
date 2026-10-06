@@ -26,7 +26,9 @@ api.interceptors.response.use(
 
 // ── Imóveis ──────────────────────────────
 export const criarImovel     = (data)     => api.post('/imovel', data);
-export const listarImoveis   = (q = '', page = 1, limit = 10) => api.get('/imoveis', { params: { ...(q ? { q } : {}), page, limit } });
+// filtros: { status, tipo, cidade, valorMin, valorMax } (vazios são ignorados)
+const semVazios = (o = {}) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== '' && v != null));
+export const listarImoveis   = (q = '', page = 1, limit = 10, filtros = {}) => api.get('/imoveis', { params: { ...(q ? { q } : {}), ...semVazios(filtros), page, limit } });
 export const buscarSigla     = (cidade)   => api.get('/imoveis/sigla', { params: { cidade } });
 export const atualizarImovel = (id, data) => api.put(`/imovel/${id}`, data);
 export const deletarImovel   = (id)       => api.delete(`/imovel/${id}`);
@@ -34,9 +36,15 @@ export const deletarImovel   = (id)       => api.delete(`/imovel/${id}`);
 // ── Clientes ─────────────────────────────
 export const criarCliente     = (data)     => api.post('/cliente', data);
 // tipo = 'Vendedor' | 'Comprador' | 'Ambos' (opcional). 'Vendedor' também traz quem é 'Ambos'.
-export const listarClientes   = (q = '', page = 1, limit = 10, tipo = '') => api.get('/clientes', { params: { ...(q ? { q } : {}), ...(tipo ? { tipo } : {}), page, limit } });
+export const listarClientes   = (q = '', page = 1, limit = 10, tipo = '', filtros = {}) => api.get('/clientes', { params: { ...(q ? { q } : {}), ...(tipo ? { tipo } : {}), ...semVazios(filtros), page, limit } });
 export const atualizarCliente = (id, data) => api.put(`/cliente/${id}`, data);
 export const deletarCliente   = (id)       => api.delete(`/cliente/${id}`);
+
+// ── CRM: alertas, compatibilidade e ficha ──
+export const buscarAlertasAutorizacao = (dias = 15) => api.get('/alertas/autorizacoes', { params: { dias } });
+export const imoveisCompativeis = (idCliente) => api.get(`/clientes/${encodeURIComponent(idCliente)}/imoveis-compativeis`);
+export const clientesCompativeis = (idImovel) => api.get(`/imoveis/${encodeURIComponent(idImovel)}/clientes-compativeis`);
+export const gerarFichaPdf = (idImovel) => api.get(`/imoveis/${encodeURIComponent(idImovel)}/ficha`, { responseType: 'blob', timeout: 30000 });
 
 // ── Movimentações ─────────────────────────
 export const criarMovimentacao  = (data) => api.post('/movimentacao', data);

@@ -1,3 +1,4 @@
+const { camposNovosCliente, ErroValidacao, filtrarClientes } = require('../utils/crm');
 const { appendRow, getRows, getColumnA, updateRowById, deleteRowById, deleteMovimentacoesByRef, CLIENTES_SHEET } = require('../sheets');
 
 // Tipo de cliente aceito na planilha. Qualquer outro valor vira vazio (cadastros antigos não têm tipo).
@@ -44,7 +45,8 @@ async function createCliente(req, res) {
     // Endereço concatenado (mantém coluna original intacta)
     const endConcat = [logradouro, numero, complemento, bairro, cidade, uf, cep].filter(Boolean).join(', ');
 
-    // A ordem dos campos DEVE seguir exatamente CLIENTES_HEADERS (24 colunas)
+    // A ordem dos campos DEVE seguir exatamente CLIENTES_HEADERS (31 colunas)
+    const novos = camposNovosCliente(b);
     const row = [
       id,               // 1  ID
       now,              // 2  Data Cadastro
@@ -71,11 +73,13 @@ async function createCliente(req, res) {
       complemento,      // 22 Complemento
       bairro,           // 23 Bairro
       normalizarTipoCliente(tipoCliente), // 24 Tipo de Cliente
+      ...novos,                           // 25-31 Status + perfil de busca
     ];
 
     await appendRow(CLIENTES_SHEET, row);
     res.status(201).json({ success: true, id });
   } catch (err) {
+    if (err instanceof ErroValidacao) return res.status(400).json({ error: err.message });
     console.error('[POST /cliente]', err);
     res.status(500).json({ error: err.message });
   }
@@ -88,14 +92,15 @@ async function listClientes(req, res) {
     const q = (req.query.q || '').toLowerCase().trim();
     const tipo = normalizarTipoCliente(req.query.tipo);
     const porTipo = tipo ? rows.filter((r) => tiposQueIncluem(tipo).includes(r['Tipo de Cliente'])) : rows;
+    const porStatus = filtrarClientes(porTipo, { status: req.query.status, cidade: req.query.cidade });
     const filtered = q
-      ? porTipo.filter(
+      ? porStatus.filter(
           (r) =>
             (r['ID'] || '').toLowerCase().includes(q) ||
             (r['Nome'] || '').toLowerCase().includes(q) ||
             (r['CPF'] || '').toLowerCase().includes(q)
         )
-      : porTipo;
+      : porStatus;
 
     const total      = filtered.length;
     const limit      = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
@@ -147,7 +152,8 @@ async function updateCliente(req, res) {
     // Endereço concatenado (mantém coluna original intacta)
     const endConcat = [logradouro, numero, complemento, bairro, cidade, uf, cep].filter(Boolean).join(', ');
 
-    // A ordem dos campos DEVE seguir exatamente CLIENTES_HEADERS (24 colunas)
+    // A ordem dos campos DEVE seguir exatamente CLIENTES_HEADERS (31 colunas)
+    const novos = camposNovosCliente(b, original);
     const row = [
       id,                        // 1  ID (preserva original)
       original['Data Cadastro'], // 2  Data Cadastro (preserva original)
@@ -174,11 +180,13 @@ async function updateCliente(req, res) {
       complemento,               // 22 Complemento
       bairro,                    // 23 Bairro
       normalizarTipoCliente(tipoCliente), // 24 Tipo de Cliente
+      ...novos,                           // 25-31 Status + perfil de busca
     ];
 
     await updateRowById(CLIENTES_SHEET, id, row);
     res.json({ success: true, id });
   } catch (err) {
+    if (err instanceof ErroValidacao) return res.status(400).json({ error: err.message });
     console.error('[PUT /cliente]', err);
     res.status(err.message.includes('não encontrado') ? 404 : 500).json({ error: err.message });
   }

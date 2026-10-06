@@ -36,6 +36,12 @@
             </select>
             <p class="text-xs text-slate-400 mt-1">Quem é Vendedor ou Ambos aparece na busca de vendedor ao cadastrar um imóvel.</p>
           </div>
+          <div class="sm:col-span-2">
+            <label class="input-label">Status do cliente</label>
+            <select v-model="form.statusCliente" class="input-field sm:max-w-xs" data-teste="status-cliente">
+              <option v-for="st in statusClienteOpcoes" :key="st" :value="st">{{ st }}</option>
+            </select>
+          </div>
           <div>
             <label class="input-label">CPF</label>
             <input v-model="form.cpf" class="input-field" placeholder="000.000.000-00" maxlength="14" @input="formatCPF" />
@@ -147,10 +153,57 @@
         </div>
       </div>
 
+      <!-- ───── O que o comprador procura (só para Comprador / Ambos) ───── -->
+      <transition name="fade">
+        <div v-if="ehComprador" class="card p-6" data-teste="perfil-busca">
+          <div class="section-title">
+            <span class="section-number">3</span>
+            O que o cliente procura
+          </div>
+          <p class="text-xs text-slate-500 -mt-2 mb-4">Com isso o sistema avisa quais imóveis combinam com este comprador.</p>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="input-label">Valor mínimo (R$)</label>
+              <input v-model="form.valorMinimo" @input="formatarMoeda($event, 'valorMinimo')" class="input-field" placeholder="R$ 0,00" inputmode="numeric" data-teste="valor-minimo" />
+            </div>
+            <div>
+              <label class="input-label">Valor máximo (R$)</label>
+              <input v-model="form.valorMaximo" @input="formatarMoeda($event, 'valorMaximo')" class="input-field" placeholder="R$ 0,00" inputmode="numeric" data-teste="valor-maximo" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="input-label">Tipo de imóvel</label>
+              <select v-model="form.tipoProcurado" class="input-field sm:max-w-xs" data-teste="tipo-procurado">
+                <option value="">Qualquer</option>
+                <option value="Residencial">Residencial</option>
+                <option value="Comercial">Comercial</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="input-label">Subtipos</label>
+              <div class="flex flex-wrap gap-2">
+                <label v-for="st in subtiposOpcoes" :key="st" class="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border cursor-pointer"
+                  :class="form.subtiposProcurados.includes(st) ? 'border-navy-600 bg-navy-50 text-navy-700' : 'border-slate-200 text-slate-600'">
+                  <input type="checkbox" class="sr-only" :value="st" v-model="form.subtiposProcurados" />
+                  {{ st }}
+                </label>
+              </div>
+            </div>
+            <div>
+              <label class="input-label">Cidade</label>
+              <input v-model="form.cidadeProcurada" class="input-field" placeholder="Ex.: Blumenau" maxlength="100" data-teste="cidade-procurada" />
+            </div>
+            <div>
+              <label class="input-label">Bairros (separe por vírgula)</label>
+              <input v-model="form.bairrosProcurados" class="input-field" placeholder="Ex.: Itoupava Norte, Velha" maxlength="300" data-teste="bairros-procurados" />
+            </div>
+          </div>
+        </div>
+      </transition>
+
       <!-- ───── Vínculo com Imóvel ───── -->
       <div class="card p-6">
         <div class="section-title">
-          <span class="section-number">3</span>
+          <span class="section-number">4</span>
           Vínculo com Imóvel
         </div>
         <div>
@@ -169,7 +222,7 @@
       <!-- ───── Movimentação ───── -->
       <div class="card p-6">
         <div class="section-title">
-          <span class="section-number">4</span>
+          <span class="section-number">5</span>
           Movimentação / Histórico
         </div>
         <textarea
@@ -199,7 +252,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { criarCliente, atualizarCliente, listarClientes } from '../api/index.js';
 import { useRouter, useRoute } from 'vue-router';
 import { useToast } from '../composables/useToast.js';
@@ -235,7 +288,18 @@ async function buscarCep() {
   }
 }
 
+const statusClienteOpcoes = ['Novo', 'Em atendimento', 'Negociando', 'Fechado', 'Inativo'];
+const subtiposOpcoes = ['Apartamento', 'Casa', 'Sobrado', 'Terreno', 'Galpão', 'Sala'];
+
+function formatarMoeda(e, campo) {
+  const digits = e.target.value.replace(/\D/g, '');
+  if (!digits) { form.value[campo] = ''; return; }
+  form.value[campo] = (parseInt(digits, 10) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
 const form = ref({
+  statusCliente: 'Novo',
+  valorMinimo: '', valorMaximo: '', tipoProcurado: '', subtiposProcurados: [], cidadeProcurada: '', bairrosProcurados: '',
   tipoCliente: '',
   nome: '', cpf: '', rg: '', estadoCivil: '', conjuge: '', dataAniversario: '',
   email: '', telefone: '',
@@ -280,8 +344,10 @@ function formatCPF(e) {
   form.value.cpf = v;
 }
 
+const ehComprador = computed(() => ['Comprador', 'Ambos'].includes(form.value.tipoCliente));
+
 function buildPayload(f) {
-  return {
+  const payload = {
     dadosPessoais: {
       tipoCliente:     f.tipoCliente,
       nome:            f.nome,
@@ -311,7 +377,20 @@ function buildPayload(f) {
       imovelInteresse: f.imovelInteresse,
     },
     movimentacao: f.movimentacao,
+    gestao: { status: f.statusCliente },
   };
+  // Só envia o perfil de busca de quem é comprador; para os demais o servidor mantém o que já estava salvo.
+  if (['Comprador', 'Ambos'].includes(f.tipoCliente)) {
+    payload.perfilBusca = {
+      valorMinimo: f.valorMinimo,
+      valorMaximo: f.valorMaximo,
+      tipo: f.tipoProcurado,
+      subtipos: f.subtiposProcurados,
+      cidade: f.cidadeProcurada,
+      bairros: f.bairrosProcurados,
+    };
+  }
+  return payload;
 }
 
 async function submit() {
@@ -319,6 +398,13 @@ async function submit() {
   if (!f.nome.trim()) {
     error('O nome do cliente é obrigatório.');
     return;
+  }
+  if (ehComprador.value && f.valorMinimo && f.valorMaximo) {
+    const n = (v) => parseFloat(String(v).replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+    if (n(f.valorMinimo) > n(f.valorMaximo)) {
+      error('O valor mínimo não pode ser maior que o máximo.');
+      return;
+    }
   }
   loading.value = true;
   try {
@@ -378,6 +464,14 @@ onMounted(async () => {
 
     form.value.imovelInteresse = vin['Imóvel de Interesse'] || cliente['Imóvel de Interesse'] || '';
     form.value.movimentacao    = cliente['Movimentação']    || '';
+
+    form.value.statusCliente      = cliente['Status Cliente'] || 'Novo';
+    form.value.valorMinimo        = cliente['Valor Mínimo'] || '';
+    form.value.valorMaximo        = cliente['Valor Máximo'] || '';
+    form.value.tipoProcurado      = cliente['Tipo Procurado'] || '';
+    form.value.subtiposProcurados = String(cliente['Subtipos Procurados'] || '').split(',').map((x) => x.trim()).filter(Boolean);
+    form.value.cidadeProcurada    = cliente['Cidade Procurada'] || '';
+    form.value.bairrosProcurados  = cliente['Bairros Procurados'] || '';
   } catch {
     error('Erro ao carregar dados do cliente.');
   }
