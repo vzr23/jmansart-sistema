@@ -2,7 +2,7 @@
 
 {{#cada proprietarios separador="; "}}**{{NOME}}**, {{nacionalidade}}, {{profissao}}, {{estado_civil}}, inscrit{{G:o|a}} no CPF {{cpf}}, residente e domiciliad{{G:o|a}} na {{rua}}, {{numero}}, bairro {{bairro}}, em {{cidade}}, {{uf}}, CEP {{cep}}{{/cada}}, na condição de {{PL:PROPRIETÁRIO|PROPRIETÁRIOS}} do imóvel registrado no Ofício de Registro de Imóveis da Comarca de {{comarca}}, sob o número de matrícula {{matricula}}, sendo esse imóvel um {{tipo_imovel}} de {{area_m2}} m² localizado em {{logradouro_imovel}}, bairro {{bairro_imovel}}, município de {{municipio_imovel}}, {{uf_imovel}}, {{PL:autoriza|autorizam}} a {{imob_razao_social}}, inscrita no {{imob_creci}} e CNPJ {{imob_cnpj}}, a intermediar a venda do aludido imóvel nas seguintes condições:
 
-**1.** O valor para venda do imóvel a ser negociado será de {{valor}} ({{valor_extenso}}) mais comissão pela corretagem da venda, sendo que a forma de pagamento poderá ser objeto de negociação entre {{PL:o PROPRIETÁRIO|os PROPRIETÁRIOS}} e o eventual comprador.
+**1.** O valor para venda do imóvel a ser negociado será de {{valor}} ({{valor_extenso}}) já incluída neste valor a comissão pela corretagem de que trata a cláusula 2, sendo que a forma de pagamento poderá ser objeto de negociação entre {{PL:o PROPRIETÁRIO|os PROPRIETÁRIOS}} e o eventual comprador.
 
 **1.1.** {{PL:O PROPRIETÁRIO considera|Os PROPRIETÁRIOS consideram}} receber contrapropostas, mas não {{PL:está obrigado|estão obrigados}} a aceitá-las.
 
