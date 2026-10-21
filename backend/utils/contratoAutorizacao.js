@@ -7,7 +7,7 @@
  * {
  *   proprietarios: [{ nome, genero:'M'|'F', nacionalidade, profissao, estado_civil, cpf,
  *                     rua, numero, bairro, cidade, uf, cep }],
- *   imovel:   { matricula, comarca, tipo_imovel, area_m2, logradouro_imovel, bairro_imovel, municipio_imovel, uf_imovel },
+ *   imovel:   { matricula, comarca, tipo_imovel, area_m2, logradouro_imovel, bairro_imovel, municipio_imovel, uf_imovel, numero_unidade? },
  *   condicoes:{ valor, comissao_pct=6, prazo_dias=120, multa_pct=2, juros_pct_mes=1,
  *               cidade_assinatura, data_assinatura? (padrão: hoje, fuso America/Sao_Paulo) }
  * }
@@ -92,10 +92,18 @@ function montarContexto(entrada) {
 
   // ── Imóvel ─────────────────────────────────────────────────────
   const im = entrada?.imovel;
+  const tipo_imovel = texto(im, 'tipo_imovel', 'imovel.tipo_imovel', { max: 60 });
+  const numero_unidade = limpa(im?.numero_unidade, 20);
+  const tipoRequerUnidade = /^(apartamento|sala|conjunto)$/i.test(tipo_imovel);
+  if (tipoRequerUnidade && !numero_unidade) {
+    avisos.push({ campo: 'imovel.numero_unidade', mensagem: 'número da unidade não informado' });
+  }
   const imovel = {
     matricula: texto(im, 'matricula', 'imovel.matricula', { max: 40 }),
     comarca: texto(im, 'comarca', 'imovel.comarca', { max: 100 }),
-    tipo_imovel: texto(im, 'tipo_imovel', 'imovel.tipo_imovel', { max: 60 }),
+    tipo_imovel,
+    numero_unidade,
+    numero_unidade_presente: numero_unidade ? 'sim' : 'nao',
     area_m2: tentar('imovel.area_m2', () => F.formatarArea(limpa(im?.area_m2, 20))),
     logradouro_imovel: texto(im, 'logradouro_imovel', 'imovel.logradouro_imovel', { max: 250 }),
     bairro_imovel: texto(im, 'bairro_imovel', 'imovel.bairro_imovel', { max: 100 }),

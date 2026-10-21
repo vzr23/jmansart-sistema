@@ -23,23 +23,41 @@ test('gera PDF válido em memória (Buffer), com 1 e com 5 proprietários', asyn
   }
 });
 
-test('marca MINUTA: ligada por padrão e removível por variável de ambiente', async () => {
+test('marca MINUTA: desligada por padrão; ligada com CONTRATO_MARCA_MINUTA=true', async () => {
   const guardado = process.env.CONTRATO_MARCA_MINUTA;
   try {
     delete process.env.CONTRATO_MARCA_MINUTA;
-    assert.equal(marcaMinutaAtiva(), true);
-    process.env.CONTRATO_MARCA_MINUTA = 'false';
-    assert.equal(marcaMinutaAtiva(), false);
-    process.env.CONTRATO_MARCA_MINUTA = ' FALSE ';
     assert.equal(marcaMinutaAtiva(), false);
     process.env.CONTRATO_MARCA_MINUTA = 'true';
     assert.equal(marcaMinutaAtiva(), true);
+    process.env.CONTRATO_MARCA_MINUTA = ' TRUE ';
+    assert.equal(marcaMinutaAtiva(), true);
+    process.env.CONTRATO_MARCA_MINUTA = 'false';
+    assert.equal(marcaMinutaAtiva(), false);
 
     const { texto } = gerarTextoAutorizacaoVenda(base(1));
-    const comMarca = await gerarPdfContrato(texto); // segue o ambiente (true)
-    process.env.CONTRATO_MARCA_MINUTA = 'false';
-    const semMarca = await gerarPdfContrato(texto);
+    delete process.env.CONTRATO_MARCA_MINUTA;
+    const semMarca = await gerarPdfContrato(texto); // segue o ambiente (false)
+    process.env.CONTRATO_MARCA_MINUTA = 'true';
+    const comMarca = await gerarPdfContrato(texto);
     assert.ok(comMarca.length > semMarca.length, 'o PDF com marca deve ser maior que o sem marca');
+  } finally {
+    if (guardado === undefined) delete process.env.CONTRATO_MARCA_MINUTA; else process.env.CONTRATO_MARCA_MINUTA = guardado;
+  }
+});
+
+test('rodapé: sem frase "MINUTA sujeita a revisão jurídica" em ambos os casos', async () => {
+  const guardado = process.env.CONTRATO_MARCA_MINUTA;
+  try {
+    const { texto } = gerarTextoAutorizacaoVenda(base(1));
+
+    delete process.env.CONTRATO_MARCA_MINUTA;
+    const semMarca = await gerarPdfContrato(texto);
+    assert.doesNotMatch(semMarca.toString('latin1'), /MINUTA sujeita a revisão jurídica/);
+
+    process.env.CONTRATO_MARCA_MINUTA = 'true';
+    const comMarca = await gerarPdfContrato(texto);
+    assert.doesNotMatch(comMarca.toString('latin1'), /MINUTA sujeita a revisão jurídica/);
   } finally {
     if (guardado === undefined) delete process.env.CONTRATO_MARCA_MINUTA; else process.env.CONTRATO_MARCA_MINUTA = guardado;
   }

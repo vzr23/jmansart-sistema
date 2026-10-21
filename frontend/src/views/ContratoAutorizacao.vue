@@ -91,10 +91,10 @@
                 <span class="text-xs text-slate-500">Confira e complete os dados do imóvel</span>
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div v-for="c in CAMPOS_IMOVEL" :key="c.k" :class="c.col">
-                  <label class="input-label" :for="'im-' + c.k">{{ c.l }}</label>
+                <div v-for="c in CAMPOS_IMOVEL" :key="c.k" :class="c.col" v-show="c.k !== 'numero_unidade' || /^(apartamento|sala|conjunto)$/i.test(imovel.tipo_imovel)">
+                  <label class="input-label" :for="'im-' + c.k">{{ c.l }}{{ c.opcional ? ' (opcional)' : '' }}</label>
                   <input
-                    :id="'im-' + c.k" type="text" class="input-field" :class="{ '!border-red-400': tentou && vazio(imovel[c.k]) }"
+                    :id="'im-' + c.k" type="text" class="input-field" :class="{ '!border-red-400': tentou && vazio(imovel[c.k]) && !c.opcional }"
                     :value="imovel[c.k]" :placeholder="c.ph" :inputmode="c.im" :maxlength="c.max"
                     autocomplete="off" autocorrect="off" spellcheck="false" :autocapitalize="c.cap || 'sentences'"
                     @input="imovel[c.k] = aplicar(c.mask, $event.target.value)"
@@ -289,6 +289,7 @@ const CAMPOS_IMOVEL = [
   { k: 'matricula', l: 'Matrícula', max: 40 },
   { k: 'comarca', l: 'Comarca do Registro de Imóveis', max: 100, cap: 'words' },
   { k: 'tipo_imovel', l: 'Tipo do imóvel', ph: 'casa, terreno, apartamento…', max: 60, cap: 'none' },
+  { k: 'numero_unidade', l: 'Número da unidade', ph: '2002', max: 20, cap: 'none', opcional: true },
   { k: 'area_m2', l: 'Área (m²)', ph: '21282,18', im: 'decimal', mask: 'decimal', max: 15 },
   { k: 'logradouro_imovel', l: 'Endereço (rua, número, complemento)', col: 'sm:col-span-2', max: 250, cap: 'words' },
   { k: 'bairro_imovel', l: 'Bairro', max: 100, cap: 'words' },
@@ -335,7 +336,7 @@ const novoProprietario = (base = {}) => ({
   uid: ++uidSeq, nome: '', genero: '', nacionalidade: '', profissao: '', estado_civil: '',
   cpf: '', cep: '', rua: '', numero: '', bairro: '', cidade: '', uf: '', ...base,
 });
-const imovelVazio = () => ({ matricula: '', comarca: '', tipo_imovel: '', area_m2: '', logradouro_imovel: '', bairro_imovel: '', municipio_imovel: '', uf_imovel: '' });
+const imovelVazio = () => ({ matricula: '', comarca: '', tipo_imovel: '', numero_unidade: '', area_m2: '', logradouro_imovel: '', bairro_imovel: '', municipio_imovel: '', uf_imovel: '' });
 const condVazia = () => ({ valor: '', comissao_pct: '6', prazo_dias: '120', multa_pct: '2', juros_pct_mes: '1', cidade_assinatura: '' });
 
 const passo = ref(1);

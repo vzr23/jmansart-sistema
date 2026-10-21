@@ -30,7 +30,7 @@ CONTRATO_MARCA_MINUTA=true
 **O servidor se recusa a iniciar** se `CORS_ORIGIN` faltar (ou, em produção, se for `*`). Confirme que a variável existe no Railway **antes** do deploy desta versão, senão o serviço não sobe.
 
 - `TRUST_PROXY_HOPS` (opcional, padrão `1`): quantos proxies ficam na frente do backend. No Railway é 1. Os limites por IP dependem disto (veja a seção abaixo).
-- `CONTRATO_MARCA_MINUTA` (opcional, padrão `true`): marca "MINUTA" nos PDFs enquanto o texto jurídico não for aprovado. Use `false` para remover.
+- `CONTRATO_MARCA_MINUTA` (opcional, padrão `false`): marca "MINUTA" nos PDFs. Desligada por padrão. Use `true` para ligar enquanto o texto jurídico estiver em revisão. Afeta: marca d'água de fundo, faixa de aviso na prévia da tela, e rodapé.
 
 ### 3. Trigger de deploy
 - Railway faz deploy automaticamente ao fazer push para `main`
@@ -118,6 +118,20 @@ Valores atuais (ver `backend/config/seguranca.js`):
 - O modelo do texto fica em `backend/templates/` (código do servidor, nunca em pasta pública).
 - Único registro: uma linha em **Movimentações** com tipo "Contrato", usuário, data e ID do imóvel. Sem nome, CPF ou outro dado pessoal. Os logs também não trazem dados pessoais.
 - Fontes embutidas: Liberation Serif (licença SIL OFL) em `backend/fonts/`.
+
+### Número da unidade (apartamento, sala, conjunto)
+
+- Campo opcional na tela: **aparece só quando o tipo do imóvel é "apartamento", "sala" ou "conjunto"** (case-insensitive).
+- Se preenchido, o texto do contrato inclui: "sendo esse imóvel um **apartamento nº 2002**, de 183,92 m²…"
+- Se vazio para esses tipos, o sistema **avisa (sem bloquear)** na prévia.
+- Para outros tipos (casa, terreno, loja…), o campo fica escondido e o texto não menciona número.
+- A planilha pode trazer o valor da coluna **"Número da Unidade"** (pré-preenche a tela); se não existir, o campo fica em branco e é preenchido apenas em memória (como os demais campos opcionais).
+
+### Rodapé do PDF
+
+- Formato: **"J.Mansart · Autorização para Venda · Página X de Y"** (sem menção a "MINUTA sujeita a revisão jurídica")
+- A marca d'água "MINUTA" (em grande, de fundo) é controlada por `CONTRATO_MARCA_MINUTA` (veja acima)
+- O rodapé é **o mesmo em ambos os casos** (MINUTA ligada ou desligada): apenas marca d'água muda
 
 ### ⚠️ Ponto de atenção: exclusividade
 

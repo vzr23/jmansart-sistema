@@ -31,13 +31,24 @@ const BASE = {
   const dir = path.join(__dirname, '..', 'exemplos');
   fs.mkdirSync(dir, { recursive: true });
   const casos = {
-    'exemplo-1-proprietario.pdf': [MARIA],
-    'exemplo-2-proprietarios.pdf': [MARIA, JOSE],
+    'exemplo-1-proprietario.pdf': { proprietarios: [MARIA], desc: '1 proprietário, casa' },
+    'exemplo-2-proprietarios.pdf': { proprietarios: [MARIA, JOSE], desc: '2 proprietários, terreno' },
+    'exemplo-apartamento-2002.pdf': {
+      proprietarios: [MARIA],
+      imovel: { ...BASE.imovel, tipo_imovel: 'apartamento', numero_unidade: '2002' },
+      condicoes: BASE.condicoes,
+      desc: '1 proprietário, apartamento com unidade',
+    },
   };
-  for (const [nome, proprietarios] of Object.entries(casos)) {
-    const { texto, avisos } = gerarTextoAutorizacaoVenda({ proprietarios, ...BASE });
-    const pdf = await gerarPdfContrato(texto, { minuta: true });
+  for (const [nome, opcoes] of Object.entries(casos)) {
+    const entrada = {
+      proprietarios: opcoes.proprietarios,
+      imovel: opcoes.imovel || BASE.imovel,
+      condicoes: opcoes.condicoes || BASE.condicoes,
+    };
+    const { texto, avisos } = gerarTextoAutorizacaoVenda(entrada);
+    const pdf = await gerarPdfContrato(texto);
     fs.writeFileSync(path.join(dir, nome), pdf);
-    console.log(`${nome}: ${pdf.length} bytes | avisos: ${avisos.map((a) => a.campo).join(', ') || 'nenhum'}`);
+    console.log(`${nome}: ${pdf.length} bytes (${opcoes.desc}) | avisos: ${avisos.map((a) => a.campo).join(', ') || 'nenhum'}`);
   }
 })().catch((e) => { console.error(e.message); process.exit(1); });

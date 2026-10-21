@@ -11,8 +11,7 @@
  *  - Fecho (data + assinaturas + compromisso do corretor) fica junto, na mesma página, quando cabe em uma página.
  *    Se não couber (muitos proprietários), quebra apenas ENTRE blocos: um bloco de assinatura nunca é dividido.
  *
- * Marca "MINUTA": ligada por padrão enquanto o texto jurídico não for aprovado.
- * Desligar com a variável de ambiente CONTRATO_MARCA_MINUTA=false.
+ * Marca "MINUTA": desligada por padrão. Ligar com a variável de ambiente CONTRATO_MARCA_MINUTA=true.
  */
 const fs = require('fs');
 const path = require('path');
@@ -37,7 +36,7 @@ const ENTRELINHA = 2.5;
 const RECUO_SUBCLAUSULA = 22;
 const FOLGA = 6; // pontos de segurança nas medições de altura
 
-const marcaMinutaAtiva = () => String(process.env.CONTRATO_MARCA_MINUTA ?? 'true').trim().toLowerCase() !== 'false';
+const marcaMinutaAtiva = () => String(process.env.CONTRATO_MARCA_MINUTA ?? 'false').trim().toLowerCase() === 'true';
 
 function segmentos(texto) {
   const partes = [];
@@ -240,7 +239,7 @@ function gerarPdfContrato(texto, opcoes = {}) {
         doc.switchToPage(i);
         const margemOriginal = doc.page.margins.bottom;
         doc.page.margins.bottom = 0; // evita que escrever no rodapé crie nova página
-        const rodape = `J.Mansart · Autorização para Venda · Página ${i - start + 1} de ${count}${minuta ? ' · MINUTA sujeita a revisão jurídica' : ''}`;
+        const rodape = `J.Mansart · Autorização para Venda · Página ${i - start + 1} de ${count}`;
         doc.font(FONTE.normal).fontSize(8).fillColor('#666666').fillOpacity(1)
           .text(rodape, MARGENS.left, doc.page.height - 45, { width: larguraUtil, align: 'center', lineBreak: false });
         doc.page.margins.bottom = margemOriginal;

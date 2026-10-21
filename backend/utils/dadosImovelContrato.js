@@ -87,6 +87,7 @@ function mapearImovelParaContrato(row) {
     imovel: {
       matricula: t(row['Matrícula']),
       tipo_imovel: t(row['Subtipo'] || row['Tipo']).toLowerCase(),
+      numero_unidade: t(row['Número da Unidade'] || ''),
       logradouro_imovel: juntar(row['Logradouro Imóvel'], row['Número Imóvel'], row['Complemento Imóvel'])
         || juntar(imov.logradouro, imov.numero, imov.complemento),
       bairro_imovel: t(row['Bairro Imóvel']) || imov.bairro || '',

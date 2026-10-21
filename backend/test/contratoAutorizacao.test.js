@@ -9,8 +9,8 @@ const JOSE = { ...MARIA, estado_civil: 'casado', nome: "José Antônio d'Ávila 
 const ANA = { ...MARIA, nome: 'Ana Conceição Teste', genero: 'F', cpf: '333.333.333-33', rg: '3.333.333' };
 const IMOVEL = { matricula: '12.345', comarca: 'Blumenau', tipo_imovel: 'terreno', area_m2: '21282,18', logradouro_imovel: 'Rodovia SC-999, km 5', bairro_imovel: 'Bairro Fictício', municipio_imovel: 'Blumenau', uf_imovel: 'SC' };
 const CONDICOES = { valor: 'R$ 1.500.000,00', cidade_assinatura: 'Blumenau', data_assinatura: '2026-09-17' };
-const entrada = (proprietarios, condicoes = {}) => ({ proprietarios, imovel: IMOVEL, condicoes: { ...CONDICOES, ...condicoes } });
-const gerar = (props, cond) => gerarTextoAutorizacaoVenda(entrada(props, cond));
+const entrada = (proprietarios, condicoes = {}, imovel = IMOVEL) => ({ proprietarios, imovel, condicoes: { ...CONDICOES, ...condicoes } });
+const gerar = (props, cond = {}, imov) => gerarTextoAutorizacaoVenda(entrada(props, cond, imov));
 const paragrafoAbertura = (texto) => texto.split(/\n\s*\n/)[1];
 
 test('1 proprietária (F): singular e feminino em todo o texto', () => {
@@ -149,4 +149,31 @@ test('sanitiza entradas: sem "*", chaves nem quebras de linha (não injeta marca
   const { texto } = gerar([{ ...MARIA, nome: 'Fulana **Teste**\n{{NOME}}', profissao: 'a\u0000b' }]);
   assert.match(texto, /^\*\*FULANA TESTE NOME\*\*, brasileira, a b,/m);
   assert.doesNotMatch(texto, /\{\{/);
+});
+
+test('número da unidade: apenas para apartamento/sala/conjunto; avisa se vazio em apartamento', () => {
+  const apt = { ...IMOVEL, tipo_imovel: 'apartamento' };
+  const { texto: textoAptVazio, avisos: avisosApt } = gerar([MARIA], {}, apt);
+  assert.match(textoAptVazio, /sendo esse imóvel um apartamento de/);
+  assert.ok(avisosApt.some((a) => a.campo === 'imovel.numero_unidade'));
+  const { texto: textoAptComUnidade } = gerar([MARIA], {}, { ...apt, numero_unidade: '2002' });
+  assert.match(textoAptComUnidade, /sendo esse imóvel um apartamento nº 2002 de/);
+});
+
+test('número da unidade: sala e conjunto também requerem unidade; casa/terreno não têm campo', () => {
+  for (const tipo of ['apartamento', 'sala', 'conjunto']) {
+    const { avisos } = gerar([MARIA], {}, { ...IMOVEL, tipo_imovel: tipo });
+    assert.ok(avisos.some((a) => a.campo === 'imovel.numero_unidade'));
+  }
+  for (const tipo of ['casa', 'terreno', 'loja', 'sobrado']) {
+    const { texto, avisos } = gerar([MARIA], {}, { ...IMOVEL, tipo_imovel: tipo });
+    assert.doesNotMatch(texto, / nº /);
+    assert.ok(!avisos.some((a) => a.campo === 'imovel.numero_unidade'));
+  }
+});
+
+test('regressão: sem número de unidade, texto de outros tipos é idêntico ao antigo', () => {
+  const { texto } = gerar([MARIA], {}, { ...IMOVEL, tipo_imovel: 'casa', numero_unidade: '' });
+  assert.match(texto, /sendo esse imóvel um casa de [0-9,.]+ m² localizado em/);
+  assert.doesNotMatch(texto, / nº /);
 });

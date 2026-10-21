@@ -23,7 +23,7 @@ const LINHA = {
 const CORPO = {
   imovel_id: 'bc0012026',
   proprietarios: [{ nome: NOME, genero: 'F', nacionalidade: 'brasileira', profissao: 'empresária', estado_civil: 'solteira', cpf: CPF, rua: RUA, numero: '10', bairro: 'Centro', cidade: 'Blumenau', uf: 'SC', cep: '89000-000' }],
-  imovel: { matricula: '12.345', comarca: 'Blumenau', tipo_imovel: 'casa', area_m2: '300', logradouro_imovel: 'Rua do Imóvel, 5', bairro_imovel: 'Bairro X', municipio_imovel: 'Blumenau', uf_imovel: 'SC' },
+  imovel: { matricula: '12.345', comarca: 'Blumenau', tipo_imovel: 'casa', numero_unidade: '', area_m2: '300', logradouro_imovel: 'Rua do Imóvel, 5', bairro_imovel: 'Bairro X', municipio_imovel: 'Blumenau', uf_imovel: 'SC' },
   condicoes: { valor: 'R$ 800.000,00', cidade_assinatura: 'Blumenau', data_assinatura: '2026-10-01' },
 };
 const SENSIVEIS = [NOME, 'Sigilosa', CPF, '52998224725', RG, RUA, '12.345', 'sigiloso@exemplo.test'];
